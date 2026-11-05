@@ -1,0 +1,44 @@
+{
+  "name": "usdc-checkout-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stablecoin cross-border checkout prototype (Base Sepolia testnet only).",
+  "scripts": {
+    "setup": "tsx scripts/setup.ts",
+    "dev": "concurrently -k -n web,worker -c cyan,magenta \"next dev\" \"tsx watch --clear-screen=false worker/index.ts\"",
+    "dev:web": "next dev",
+    "worker": "tsx worker/index.ts",
+    "build": "next build",
+    "start": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/unit.test.ts tests/engine.test.ts tests/regressions.test.ts tests/features.test.ts",
+    "db:reset": "tsx scripts/reset-db.ts",
+    "wallets": "tsx scripts/wallets.ts",
+    "pay:test": "tsx scripts/pay-test.ts",
+    "fund:sponsor": "tsx scripts/fund-sponsor.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@tanstack/react-query": "^5.104.5",
+    "drizzle-orm": "^0.45.4",
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "viem": "^2.57.10",
+    "wagmi": "^3.7.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "concurrently": "^10.0.6",
+    "drizzle-kit": "^0.31.11",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

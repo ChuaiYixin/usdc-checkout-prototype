@@ -1,0 +1,25 @@
+# secrets — the HD seed and test keys live here, never commit
+.env
+.env.local
+.env*.local
+
+# private working notes: job-search strategy, agent instructions, unfinished drafts
+CLAUDE.md
+.claude/
+docs/portfolio-context.md
+docs/dev-log.md
+docs/how-i-built-this-with-ai.md
+
+# local database
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# build / deps
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
