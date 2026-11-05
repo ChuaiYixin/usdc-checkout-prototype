@@ -1,6 +1,7 @@
+import { T } from "@/i18n/client";
 import { Badge } from "./ui";
 
-const PR_STATUS: Record<string, [string, string]> = {
+export const PR_STATUS: Record<string, [string, string]> = {
   awaiting_payment: ["Awaiting payment", "gray"],
   confirming: ["Confirming", "blue"],
   underpaid: ["Underpaid", "amber"],
@@ -11,7 +12,7 @@ const PR_STATUS: Record<string, [string, string]> = {
   refunded: ["Refunded", "gray"],
 };
 
-const FUNDS: Record<string, [string, string]> = {
+export const FUNDS: Record<string, [string, string]> = {
   none: ["—", "gray"],
   pending_finality: ["Pending finality", "blue"],
   available: ["Available", "green"],
@@ -20,7 +21,7 @@ const FUNDS: Record<string, [string, string]> = {
   refunded: ["Refunded", "gray"],
 };
 
-const REFUND: Record<string, [string, string]> = {
+export const REFUND: Record<string, [string, string]> = {
   queued: ["Queued", "blue"],
   submitted: ["Submitted", "blue"],
   succeeded: ["Refunded", "green"],
@@ -28,7 +29,7 @@ const REFUND: Record<string, [string, string]> = {
   blocked: ["Blocked (screening)", "violet"],
 };
 
-const EXCEPTION_TYPES: Record<string, string> = {
+export const EXCEPTION_TYPES: Record<string, string> = {
   underpaid: "Underpaid (awaiting top-up)",
   underpaid_expired: "Underpaid, then expired",
   overpaid: "Overpaid",
@@ -46,20 +47,26 @@ export const DEFAULT_ACTIONS: Record<string, string> = {
   compliance_review: "Keep frozen; compliance releases or files a report",
 };
 
+function Tagged({ map, status }: { map: Record<string, [string, string]>; status: string }) {
+  const [label, tone] = map[status] ?? [status, "gray"];
+  return (
+    <Badge tone={tone}>
+      <T>{label}</T>
+    </Badge>
+  );
+}
+
 export function PrStatusBadge({ status }: { status: string }) {
-  const [label, tone] = PR_STATUS[status] ?? [status, "gray"];
-  return <Badge tone={tone}>{label}</Badge>;
+  return <Tagged map={PR_STATUS} status={status} />;
 }
 
 export function FundsBadge({ status }: { status: string }) {
   if (status === "none") return <span className="text-xs text-slate-400">—</span>;
-  const [label, tone] = FUNDS[status] ?? [status, "gray"];
-  return <Badge tone={tone}>{label}</Badge>;
+  return <Tagged map={FUNDS} status={status} />;
 }
 
 export function RefundBadge({ status }: { status: string }) {
-  const [label, tone] = REFUND[status] ?? [status, "gray"];
-  return <Badge tone={tone}>{label}</Badge>;
+  return <Tagged map={REFUND} status={status} />;
 }
 
 export function exceptionLabel(type: string) {

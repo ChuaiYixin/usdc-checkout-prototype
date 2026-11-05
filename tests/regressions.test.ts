@@ -9,6 +9,23 @@ before(async () => {
   h = await setup("regressions");
 });
 
+test("after downtime the scanner resumes at the chain tip and remembers the skipped range", () => {
+  const { planHead, trimGap } = h.engine;
+  // short lag: keep scanning from the cursor
+  assert.deepEqual(planHead(1_000n, 1_100n, null), { cursor: 1_000n, gap: null });
+  // long downtime: head jumps, range becomes a gap
+  const p = planHead(1_000n, 5_000_000n, null);
+  assert.equal(p.cursor, 4_999_900n);
+  assert.deepEqual(p.gap, { from: 1_001n, to: 4_999_900n });
+  // a second outage extends the same gap instead of losing the first one
+  const q = planHead(p.cursor, 6_000_000n, p.gap);
+  assert.deepEqual(q.gap, { from: 1_001n, to: 5_999_900n });
+  // only blocks since the oldest watched request can matter; with nothing watched the gap is dropped
+  assert.deepEqual(trimGap(p.gap, 4_000_000n), { from: 4_000_000n, to: 4_999_900n });
+  assert.equal(trimGap(p.gap, 5_000_000n), null);
+  assert.equal(trimGap(p.gap, null), null);
+});
+
 test("late transfer during an underpaid request doesn't hijack it; each part is refunded once", async () => {
   const o = await h.newOrder();
   const p = await h.pr(o.paymentRequestId);

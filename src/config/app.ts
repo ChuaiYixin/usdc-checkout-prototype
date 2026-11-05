@@ -27,15 +27,6 @@ export const SIMULATED_FX = {
   cutoffLabel: "17:00 SGT daily",
 };
 
-// Card → USDC on-ramp for buyers who don't hold USDC (SIMULATED partner). In the typical model the licensed
-// on-ramp partner does the buyer's KYC, takes the card payment (and its chargeback risk) and delivers USDC
-// straight to our deposit address — the merchant still receives a final, chargeback-free USDC payment.
-// The fee is a made-up illustrative number, not any provider's pricing.
-export const SIMULATED_ONRAMP = {
-  partnerLabel: "Card on-ramp partner (simulated)",
-  feeBps: 250,
-};
-
 // Travel rule tiers. Checked against MAS Notice PSN02 (last revised 30 June 2025), paragraphs 13.4 and 13.6.
 // Configurable here on purpose. Above the threshold the notice also requires identity verification, which isn't modelled.
 export const TRAVEL_RULE = {

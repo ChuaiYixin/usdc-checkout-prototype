@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 /** POSTs JSON to an API route, then refreshes the server-rendered page. */
 export function ActionButton({
@@ -19,6 +20,7 @@ export function ActionButton({
   className?: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
@@ -33,10 +35,10 @@ export function ActionButton({
           try {
             const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body ?? {}) });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+            if (!res.ok) throw new Error(data.error || t("Request failed ({status})", { status: res.status }));
             router.refresh();
           } catch (e) {
-            setError(e instanceof Error ? e.message : String(e));
+            setError(t(e instanceof Error ? e.message : String(e)));
           } finally {
             setBusy(false);
           }

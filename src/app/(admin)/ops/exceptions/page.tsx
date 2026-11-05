@@ -8,6 +8,7 @@ import { Badge, SimTag } from "@/components/ui";
 import { DEFAULT_ACTIONS, exceptionLabel } from "@/components/status";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
+import { getT } from "@/i18n/server";
 
 const TONE: Record<string, string> = {
   underpaid: "amber",
@@ -19,6 +20,7 @@ const TONE: Record<string, string> = {
 };
 
 export default async function ExceptionsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const t = await getT();
   const { view = "open" } = await searchParams;
   const rows = await db
     .select()
@@ -39,13 +41,13 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Exception queue</h1>
-          <p className="text-sm text-slate-500">On-chain transfers can&apos;t be reversed, so every exception type has a pre-agreed default (R14).</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("Exception queue")}</h1>
+          <p className="text-sm text-slate-500">{t("On-chain transfers can't be reversed, so every exception type has a pre-agreed default (R14).")}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500">Exception rate (queued arrivals ÷ all arrivals, seeded history excluded)</p>
+          <p className="text-xs text-slate-500">{t("Exception rate (queued arrivals ÷ all arrivals, seeded history excluded)")}</p>
           <p className="text-lg font-bold">
-            {rate.toFixed(1)}% <span className="text-xs font-normal text-slate-400">target &lt; 2% · inflated by simulator tests</span>
+            {rate.toFixed(1)}% <span className="text-xs font-normal text-slate-400">{t("target < 2% · inflated by simulator tests")}</span>
           </p>
         </div>
       </div>
@@ -53,7 +55,7 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
       <div className="inline-flex rounded-xl bg-slate-100 p-1 text-sm">
         {["open", "resolved"].map((v) => (
           <Link key={v} href={`/ops/exceptions?view=${v}`} className={`rounded-lg px-4 py-1.5 font-medium capitalize ${view === v ? "bg-white shadow-sm" : "text-slate-500"}`}>
-            {v}
+            {t(v)}
           </Link>
         ))}
       </div>
@@ -61,20 +63,20 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
       <div className="space-y-3">
         {rows.map((ex) => {
           const pr = prs.find((p) => p.id === ex.paymentRequestId)!;
-          const t = transfers.find((x) => x.id === ex.transferId);
+          const tr = transfers.find((x) => x.id === ex.transferId);
           const exRefunds = refunds.filter((r) => r.exceptionId === ex.id);
           const activeRefund = exRefunds.find((r) => r.status !== "failed");
           const failedRefund = exRefunds.find((r) => r.status === "failed");
           const amount =
-            ex.type === "non_usdc" && t
-              ? `${formatUsdc(t.amountOnchain)} ${t.tokenSymbol}`
+            ex.type === "non_usdc" && tr
+              ? `${formatUsdc(tr.amountOnchain)} ${tr.tokenSymbol}`
               : `${formatUsdc(BigInt(ex.amountOnchain) * BigInt(pr.divisor))} USDC`;
           return (
             <div key={ex.id} className="card p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
                   <p className="flex flex-wrap items-center gap-2">
-                    <Badge tone={TONE[ex.type]}>{exceptionLabel(ex.type)}</Badge>
+                    <Badge tone={TONE[ex.type]}>{t(exceptionLabel(ex.type))}</Badge>
                     <Link href={`/merchant/orders/${ex.orderId}`} className="mono text-sm font-semibold text-brand hover:underline">
                       {ex.orderId}
                     </Link>
@@ -82,28 +84,28 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
                     {pr.simulated ? <SimTag /> : null}
                   </p>
                   <p className="text-xs text-slate-500">
-                    Opened <Time ms={ex.createdAt} />
-                    {t && (
+                    {t("Opened")} <Time ms={ex.createdAt} />
+                    {tr && (
                       <>
                         {" "}
-                        · from <span className="mono">{shortHex(t.fromAddress)}</span>
+                        · {t("from")} <span className="mono">{shortHex(tr.fromAddress)}</span>
                       </>
                     )}
-                    {ex.note && <> · {ex.note}</>}
+                    {ex.note && <> · {t(ex.note)}</>}
                   </p>
                   <p className="text-sm text-slate-600">
-                    <span className="text-slate-400">Default handling:</span> {DEFAULT_ACTIONS[ex.defaultAction] ?? ex.defaultAction}
+                    <span className="text-slate-400">{t("Default handling:")}</span> {t(DEFAULT_ACTIONS[ex.defaultAction] ?? ex.defaultAction)}
                   </p>
-                  {ex.resolution && <p className="text-sm text-emerald-700">✓ {ex.resolution}</p>}
+                  {ex.resolution && <p className="text-sm text-emerald-700">✓ {t(ex.resolution)}</p>}
                   {exRefunds.map((r) => (
                     <p key={r.id} className="text-xs text-slate-500">
-                      Refund {r.status} {r.error && <span className="text-rose-600">— {r.error}</span>}
+                      {t("Refund status: {status}", { status: t(r.status) })} {r.error && <span className="text-rose-600">— {t(r.error)}</span>}
                     </p>
                   ))}
                 </div>
                 {ex.status === "open" && failedRefund && !activeRefund && (
                   <ActionButton url={`/api/merchant/refunds/${failedRefund.id}/retry`} className="btn-primary btn-sm">
-                    Retry refund
+                    {t("Retry refund")}
                   </ActionButton>
                 )}
                 {ex.status === "open" && exRefunds.length === 0 && (
@@ -113,20 +115,20 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
                         key={a.action}
                         url={`/api/ops/exceptions/${ex.id}`}
                         body={{ action: a.action }}
-                        confirm={a.confirm}
+                        confirm={a.confirm ? t(a.confirm) : undefined}
                         className={a.primary ? "btn-primary btn-sm" : "btn-secondary btn-sm"}
                       >
-                        {a.label}
+                        {t(a.label)}
                       </ActionButton>
                     ))}
-                    {ex.type === "underpaid" && <span className="text-xs text-slate-500">Waiting for top-up until the request expires</span>}
+                    {ex.type === "underpaid" && <span className="text-xs text-slate-500">{t("Waiting for top-up until the request expires")}</span>}
                   </div>
                 )}
               </div>
             </div>
           );
         })}
-        {rows.length === 0 && <p className="card p-8 text-center text-sm text-slate-500">Nothing here. Use the Simulator to create edge cases.</p>}
+        {rows.length === 0 && <p className="card p-8 text-center text-sm text-slate-500">{t("Nothing here. Use the Simulator to create edge cases.")}</p>}
       </div>
     </div>
   );

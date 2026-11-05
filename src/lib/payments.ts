@@ -31,46 +31,15 @@ export interface CheckoutInput {
 
 export class CheckoutError extends Error {}
 
-export interface BuyerInfo {
-  fullName: string;
-  email: string;
-  country: string;
-  shippingAddress?: string;
-  // enhanced travel-rule tier only
-  residentialAddress?: string;
-  dateOfBirth?: string;
-}
-
-/** Store checkout: fixed product × quantity + shipping. */
-export async function createCheckout(input: CheckoutInput) {
+export async function createCheckout(b: CheckoutInput) {
   const product = PRODUCTS[0];
-  const quantity = Math.min(50, Math.max(1, Math.floor(input.quantity || 1)));
-  if (!input.shippingAddress?.trim()) throw new CheckoutError("Please fill in name, email, country and shipping address.");
-  return createOrder({
-    buyer: input,
-    items: [{ name: product.name, quantity, unitCents: product.priceCents, productId: product.id }],
-    shippingCents: SHIPPING_CENTS,
-    source: "store",
-  });
-}
+  const quantity = Math.min(50, Math.max(1, Math.floor(b.quantity || 1)));
+  const subtotal = product.priceCents * quantity;
+  const total = subtotal + SHIPPING_CENTS;
 
-/**
- * Shared by the store checkout, payment links and the merchant API: validates the buyer (R16 region, travel-rule
- * tier), creates the order and its payment request.
- */
-export async function createOrder(opts: {
-  buyer: BuyerInfo;
-  items: { name: string; quantity: number; unitCents: number; productId?: string }[];
-  shippingCents?: number;
-  source: "store" | "payment_link" | "api";
-  merchantReference?: string;
-}) {
-  const b = opts.buyer;
-  const subtotal = opts.items.reduce((s, i) => s + i.unitCents * i.quantity, 0);
-  const shipping = opts.shippingCents ?? 0;
-  const total = subtotal + shipping;
-  if (total < 100 || total > 10_000_000) throw new CheckoutError("Amount must be between $1 and $100,000.");
-  if (!b?.fullName?.trim() || !b.email?.trim() || !b.country) throw new CheckoutError("Please fill in name, email and country.");
+  if (!b.fullName?.trim() || !b.email?.trim() || !b.country || !b.shippingAddress?.trim()) {
+    throw new CheckoutError("Please fill in name, email, country and shipping address.");
+  }
 
   // R16 — enforced server-side as well, not only by hiding the button.
   if (await isRegionRestricted(b.country)) throw new CheckoutError("USDC payment is not available in your region.");
@@ -98,23 +67,21 @@ export async function createOrder(opts: {
     customerName: b.fullName.trim(),
     customerEmail: b.email.trim(),
     country: b.country,
-    shippingAddress: b.shippingAddress?.trim() || "—",
-    itemsJson: JSON.stringify(opts.items),
+    shippingAddress: b.shippingAddress.trim(),
+    itemsJson: JSON.stringify([{ productId: product.id, name: product.name, quantity, unitCents: product.priceCents }]),
     subtotalCents: subtotal,
-    shippingCents: shipping,
+    shippingCents: SHIPPING_CENTS,
     totalCents: total,
     status: "awaiting_payment",
-    source: opts.source,
-    merchantReference: opts.merchantReference ?? null,
     travelRuleTier: tier,
     travelRuleJson: JSON.stringify(travelRule),
   });
 
   const pr = await createPaymentRequest(oid, total, LIVE_CHAIN.key);
-  const what = opts.items.map((i) => `${i.quantity} × ${i.name}`).join(", ");
-  await logActivity(oid, null, "order.created", `Order placed by ${b.fullName.trim()} (${b.country}) via ${opts.source.replace("_", " ")}: ${what}`);
+  await logActivity(oid, null, "order.created", `Order placed by ${b.fullName.trim()} (${b.country}): ${quantity} × ${product.name}`);
   return { orderId: oid, paymentRequestId: pr.id };
 }
+
 /** R1: one order has at most one *active* payment request. */
 export async function createPaymentRequest(orderId: string, totalCents: number, chainKey: ChainKey) {
   const active = await db.query.paymentRequests.findFirst({

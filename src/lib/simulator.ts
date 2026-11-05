@@ -11,13 +11,8 @@ import { DEMO_RISK_ADDRESSES } from "./seed";
 
 export const SIM_BUYER = "0x51a1000000000000000000000000000000000b0b";
 const SIM_USDT = "0x5170000000000000000000000000000000000057";
-// Simulated card on-ramp partner's settlement wallet: it buys USDC for the buyer and delivers it straight to
-// the deposit address.
-export const SIM_ONRAMP = "0x0a3a000000000000000000000000000000000001";
-// Simulated exchange hot wallet (see address_labels).
-export const SIM_EXCHANGE = "0xe8c0000000000000000000000000000000000001";
 
-export type Scenario = "exact" | "underpay" | "overpay" | "topup" | "non_usdc" | "risk_payer" | "late" | "exchange" | "onramp";
+export type Scenario = "exact" | "underpay" | "overpay" | "topup" | "non_usdc" | "risk_payer" | "late";
 
 export const SCENARIOS: { key: Scenario; label: string; hint: string }[] = [
   { key: "exact", label: "Exact payment", hint: "Pays the full amount → confirming → succeeded" },
@@ -27,7 +22,6 @@ export const SCENARIOS: { key: Scenario; label: string; hint: string }[] = [
   { key: "non_usdc", label: "Send USDT instead", hint: "Not credited; goes to exception queue for manual return" },
   { key: "risk_payer", label: "Payer on risk list", hint: "Funds frozen, buyer sees 'processing' only" },
   { key: "late", label: "Pay after expiry", hint: "Only for expired requests; merchant accepts or refunds" },
-  { key: "exchange", label: "Pay from an exchange", hint: "Payer is an exchange hot wallet; refunds need a verified address" },
 ];
 
 export async function simulateTransfer(paymentRequestId: string, scenario: Scenario) {
@@ -67,14 +61,6 @@ export async function simulateTransfer(paymentRequestId: string, scenario: Scena
     case "late":
       if (Date.now() <= pr.expiresAt) throw new Error("This request hasn't expired yet — wait for the timer, then simulate a late payment");
       break;
-    case "exchange":
-      from = SIM_EXCHANGE;
-      break;
-    case "onramp":
-      if (received >= due) throw new Error("Nothing outstanding");
-      amount = due - received;
-      from = SIM_ONRAMP;
-      break;
   }
 
   const ok = await ingestTransfer(pr, {
@@ -92,9 +78,14 @@ export async function simulateTransfer(paymentRequestId: string, scenario: Scena
     simulated: 1,
   });
   // Mark the request as containing simulated funds: no explorer links, refunds are simulated too.
-  await db
-    .update(schema.paymentRequests)
-    .set({ simulated: 1, ...(scenario === "onramp" ? { fundedVia: "onramp" } : {}) })
-    .where(eq(schema.paymentRequests.id, pr.id));
+  await db.update(schema.paymentRequests).set({ simulated: 1 }).where(eq(schema.paymentRequests.id, pr.id));
   return { ok, amountOnchain: amount.toString() };
+}
+
+/** Closes a request's 15-minute window now, so the expiry paths can be demonstrated without waiting. */
+export async function expireNow(paymentRequestId: string) {
+  const pr = await db.query.paymentRequests.findFirst({ where: eq(schema.paymentRequests.id, paymentRequestId) });
+  if (!pr) throw new Error("Payment request not found");
+  if (!["awaiting_payment", "underpaid"].includes(pr.status)) throw new Error("Only an open request can be expired");
+  await db.update(schema.paymentRequests).set({ expiresAt: Date.now() - 1000, updatedAt: Date.now() }).where(eq(schema.paymentRequests.id, pr.id));
 }

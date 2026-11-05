@@ -15,8 +15,6 @@ export const orders = sqliteTable("orders", {
   shippingCents: integer("shipping_cents").notNull(),
   totalCents: integer("total_cents").notNull(),
   status: text("status").notNull(), // awaiting_payment | paid | refunded | expired | needs_review
-  source: text("source").notNull().default("store"), // store | payment_link | api
-  merchantReference: text("merchant_reference"), // merchant's own order id (API) or payment link id
   travelRuleTier: text("travel_rule_tier").notNull(), // basic | enhanced
   travelRuleJson: text("travel_rule_json").notNull(),
   simulated: integer("simulated").notNull().default(0),
@@ -50,8 +48,7 @@ export const paymentRequests = sqliteTable(
     walletVerifiedAddress: text("wallet_verified_address"),
     screeningCleared: integer("screening_cleared").notNull().default(0),
     hasNonUsdc: integer("has_non_usdc").notNull().default(0),
-    payerIsExchange: integer("payer_is_exchange").notNull().default(0),
-    fundedVia: text("funded_via"), // wallet | gasless | qr | onramp (how the buyer paid; for the funnel)
+    fundedVia: text("funded_via"), // gasless when the platform submitted the buyer's signed authorisation
     succeededAt: integer("succeeded_at"),
     availableAt: integer("available_at"),
     createdAt: integer("created_at").notNull(),
@@ -236,49 +233,6 @@ export const funnelEvents = sqliteTable(
   },
   (t) => [index("funnel_subject_idx").on(t.subject, t.step)],
 );
-
-// Payer-address labels (simulated): known exchange hot wallets. A payment from one of these can't be refunded
-// reliably to the buyer, so refunds go through a verified refund-address claim instead (PRD 开放问题 #1).
-export const addressLabels = sqliteTable("address_labels", {
-  address: text("address").primaryKey(), // lowercase
-  kind: text("kind").notNull(), // exchange
-  label: text("label").notNull(),
-});
-
-// Refund-address claims for buyers who paid from an exchange.
-export const refundClaims = sqliteTable("refund_claims", {
-  id: text("id").primaryKey(), // rc_xxx (also the secret part of the buyer's claim link)
-  paymentRequestId: text("payment_request_id").notNull(),
-  orderId: text("order_id").notNull(),
-  amountOnchain: text("amount_onchain").notNull(),
-  email: text("email").notNull(),
-  otp: text("otp").notNull(), // simulated email code
-  status: text("status").notNull(), // sent | submitted | approved | rejected
-  newAddress: text("new_address"),
-  screeningResult: text("screening_result"),
-  refundId: text("refund_id"),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
-});
-
-// Merchant API keys and no-code payment links.
-export const apiKeys = sqliteTable("api_keys", {
-  id: text("id").primaryKey(),
-  label: text("label").notNull(),
-  keyHash: text("key_hash").notNull(),
-  prefix: text("prefix").notNull(), // shown in UI, e.g. sk_test_ab12…
-  createdAt: integer("created_at").notNull(),
-  lastUsedAt: integer("last_used_at"),
-});
-
-export const paymentLinks = sqliteTable("payment_links", {
-  id: text("id").primaryKey(), // pl_xxx
-  title: text("title").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  active: integer("active").notNull().default(1),
-  uses: integer("uses").notNull().default(0),
-  createdAt: integer("created_at").notNull(),
-});
 
 // R11: whitelisted withdrawal wallets for merchants who hold USDC.
 export const whitelistWallets = sqliteTable("whitelist_wallets", {

@@ -21,7 +21,6 @@ export async function getOrderDetail(orderId: string) {
   const prs = await db.select().from(schema.paymentRequests).where(eq(schema.paymentRequests.orderId, orderId)).orderBy(desc(schema.paymentRequests.createdAt));
   const pr = prs[0] ?? null;
   const prIds = prs.map((p) => p.id);
-  const claims = prIds.length ? await db.select().from(schema.refundClaims).where(inArray(schema.refundClaims.paymentRequestId, prIds)) : [];
   const [transfers, refunds, exceptions, events, activity, settlementItems] = await Promise.all([
     prIds.length ? db.select().from(schema.transfers).where(inArray(schema.transfers.paymentRequestId, prIds)).orderBy(desc(schema.transfers.blockNumber)) : [],
     prIds.length ? db.select().from(schema.refunds).where(inArray(schema.refunds.paymentRequestId, prIds)).orderBy(desc(schema.refunds.createdAt)) : [],
@@ -30,7 +29,7 @@ export async function getOrderDetail(orderId: string) {
     db.select().from(schema.activity).where(eq(schema.activity.orderId, orderId)).orderBy(desc(schema.activity.id)),
     db.select().from(schema.settlementItems).where(eq(schema.settlementItems.orderId, orderId)),
   ]);
-  return { order, pr, transfers, refunds, exceptions, events, activity, settlementItems, claims };
+  return { order, pr, transfers, refunds, exceptions, events, activity, settlementItems };
 }
 
 /** What a merchant can still refund on a payment (on-chain units). */

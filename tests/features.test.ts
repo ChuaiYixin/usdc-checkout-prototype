@@ -1,7 +1,6 @@
-// Tests for the v1.1 additions (docs/PRD-additions.md R18–R23).
+// Tests for the additions beyond the original PRD (docs/PRD-additions.md) and the homepage's main flow.
 import { before, test } from "node:test";
 import assert from "node:assert/strict";
-import { eq } from "drizzle-orm";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { toHex } from "viem";
 import { randomBytes } from "node:crypto";
@@ -55,52 +54,7 @@ test("R18 gasless: only an exact-amount, exact-address, well-signed authorisatio
   assert.match((await checkGaslessAuthorization({ ...pr, expiresAt: Date.now() - 1 }, base, await sign(base)))!, /expired/);
 });
 
-test("R21 API: merchant_reference is idempotent and validation is enforced server-side", async () => {
-  const { createOrder, CheckoutError } = await import("../src/lib/payments");
-  const { findActiveByReference } = await import("../src/lib/api-v1");
-  const { createApiKey, authenticate } = await import("../src/lib/apikeys");
-  const key = await createApiKey("test");
-  assert.ok(await authenticate(new Request("http://x", { headers: { authorization: `Bearer ${key}` } })));
-  assert.equal(await authenticate(new Request("http://x", { headers: { authorization: "Bearer sk_test_nope" } })), null);
-
-  const r = await createOrder({
-    buyer: { fullName: "A", email: "a@example.com", country: "US" },
-    items: [{ name: "x", quantity: 1, unitCents: 5000 }],
-    source: "api",
-    merchantReference: "REF-1",
-  });
-  assert.equal(await findActiveByReference("REF-1"), r.paymentRequestId);
-  assert.equal(await findActiveByReference("REF-2"), null);
-  await assert.rejects(
-    createOrder({ buyer: { fullName: "A", email: "a@example.com", country: "ID" }, items: [{ name: "x", quantity: 1, unitCents: 5000 }], source: "api" }),
-    CheckoutError,
-  );
-});
-
-test("R23 exchange payer: refund goes through a verified claim to a non-exchange, screened address", async () => {
-  const { createRefundClaim, submitRefundClaim } = await import("../src/lib/refund-claims");
-  const o = await h.newOrder();
-  const p = await h.pr(o.paymentRequestId);
-  await h.pay(p.id, BigInt(p.amountOnchain), { from: "0xE8c0000000000000000000000000000000000001" });
-  await h.tick(p.successThreshold);
-  const paid = await h.pr(p.id);
-  assert.equal(paid.status, "succeeded");
-  assert.equal(paid.payerIsExchange, 1);
-
-  const claim = await createRefundClaim(paid, BigInt(paid.amountOnchain));
-  await assert.rejects(createRefundClaim(paid, BigInt(paid.amountOnchain)), /already been sent/);
-  await assert.rejects(submitRefundClaim(claim.id, "000000", "0x51a1000000000000000000000000000000000c0c"), /code/);
-  await assert.rejects(submitRefundClaim(claim.id, claim.otp, "0xe8c0000000000000000000000000000000000002"), /exchange/);
-  await assert.rejects(submitRefundClaim(claim.id, claim.otp, "0xbad0000000000000000000000000000000000001"), /couldn't use/);
-  // a rejected (screening hit) claim is closed; merchant issues a new one, buyer names a clean wallet
-  const claim2 = await createRefundClaim(paid, BigInt(paid.amountOnchain));
-  const refund = await submitRefundClaim(claim2.id, claim2.otp, "0x51a1000000000000000000000000000000000c0c");
-  assert.equal(refund.toAddress.toLowerCase(), "0x51a1000000000000000000000000000000000c0c");
-  await h.refunds.processRefunds();
-  assert.equal((await h.pr(p.id)).status, "refunded");
-});
-
-test("R22 funnel: steps count once per subject, errors are kept with a reason", async () => {
+test("R19 funnel: steps count once per subject, errors are kept with a reason", async () => {
   const { trackFunnel, funnelReport } = await import("../src/lib/funnel");
   await trackFunnel("cs_1", "checkout_viewed");
   await trackFunnel("cs_1", "checkout_viewed");
@@ -109,21 +63,59 @@ test("R22 funnel: steps count once per subject, errors are kept with a reason", 
   const f = await funnelReport();
   assert.equal(f.steps.find((s) => s.step === "checkout_viewed")!.count, 1);
   assert.deepEqual(f.reasons.find(([r]) => r === "no_gas_token"), ["no_gas_token", 2]);
-  const created = f.steps.find((s) => s.step === "request_created")!.count;
-  assert.ok(created >= 3, "orders created in earlier tests were tracked server-side");
   // monotonic after the request step, even though test payments skip the browser steps
-  for (let i = 2; i < f.steps.length; i++) assert.ok(f.steps[i].count <= f.steps[i - 1].count, `${f.steps[i].step} ≤ ${f.steps[i - 1].step}`);
-  assert.ok(f.steps.find((s) => s.step === "payment_succeeded")!.count >= 1);
+  const o = await h.newOrder();
+  const p = await h.pr(o.paymentRequestId);
+  await h.pay(p.id, BigInt(p.amountOnchain));
+  await h.tick(p.successThreshold);
+  const g = await funnelReport();
+  for (let i = 2; i < g.steps.length; i++) assert.ok(g.steps[i].count <= g.steps[i - 1].count, `${g.steps[i].step} ≤ ${g.steps[i - 1].step}`);
+  assert.ok(g.steps.find((s) => s.step === "payment_succeeded")!.count >= 1);
 });
 
-test("R20 payment link: each buyer gets their own request and address", async () => {
-  const { createOrder } = await import("../src/lib/payments");
-  const mk = (n: string) =>
-    createOrder({ buyer: { fullName: n, email: `${n}@example.com`, country: "US" }, items: [{ name: "Deposit", quantity: 1, unitCents: 25_000 }], source: "payment_link", merchantReference: "pl_test" });
-  const a = await mk("a");
-  const b = await mk("b");
-  const [pa, pb] = [await h.pr(a.paymentRequestId), await h.pr(b.paymentRequestId)];
-  assert.notEqual(pa.address, pb.address);
-  const order = await h.db.db.query.orders.findFirst({ where: eq(h.schema.orders.id, a.orderId) });
-  assert.equal(order!.source, "payment_link");
+test("main flow: every check exists, and only counts what happened after the part started", async () => {
+  const { PARTS } = await import("../src/guide/parts");
+  const { runChecks } = await import("../src/guide/checks");
+  const { checks: keys, latest: none } = await runChecks(Date.now());
+  assert.equal(none, null);
+  for (const part of PARTS) for (const s of part.steps) if (s.check) assert.ok(s.check in keys, `${part.id}: unknown check ${s.check}`);
+
+  // an order from before the start doesn't count, even if its payment arrives afterwards
+  const older = await h.newOrder();
+  const olderPr = await h.pr(older.paymentRequestId);
+  await new Promise((r) => setTimeout(r, 5));
+  const since = Date.now();
+  await h.pay(olderPr.id, BigInt(olderPr.amountOnchain));
+  await h.tick(olderPr.successThreshold);
+  let c = (await runChecks(since)).checks;
+  assert.equal(c.order_created, false);
+  assert.equal(c.payment_detected, false);
+  assert.equal(c.payment_succeeded, false);
+
+  // underpay → top-up, end to end, and the newest order is what the step links open
+  const o = await h.newOrder();
+  const p = await h.pr(o.paymentRequestId);
+  const seen = await runChecks(since);
+  assert.equal(seen.checks.order_created, true);
+  assert.deepEqual(seen.latest, { requestId: o.paymentRequestId, orderId: o.orderId });
+  const due = BigInt(p.amountOnchain);
+  await h.pay(p.id, (due * 3n) / 4n);
+  await h.tick(p.successThreshold);
+  c = (await runChecks(since)).checks;
+  assert.equal(c.underpaid_seen, true);
+  assert.equal(c.topped_up, false);
+  await h.pay(p.id, due - (due * 3n) / 4n);
+  await h.tick(p.successThreshold);
+  c = (await runChecks(since)).checks;
+  assert.equal(c.topped_up, true);
+  assert.equal(c.payment_succeeded, true);
+});
+
+test("simulator: expire-now closes the window and the worker's expiry then applies", async () => {
+  const { expireNow } = await import("../src/lib/simulator");
+  const o = await h.newOrder();
+  await expireNow(o.paymentRequestId);
+  await h.engine.expire(Date.now());
+  assert.equal((await h.pr(o.paymentRequestId)).status, "expired");
+  await assert.rejects(expireNow(o.paymentRequestId), /open request/);
 });

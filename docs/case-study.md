@@ -55,13 +55,12 @@ Verified on the real testnet: a full payment, a full refund, underpay then top-u
 
 ### Beyond the PRD: what building it taught me to add
 
-Running the prototype surfaced gaps that the PRD only listed as open questions or didn't cover. Each is now a numbered requirement (R18–R23, in [PRD-additions.md](PRD-additions.md)):
+Running the prototype surfaced two gaps. Each is now a numbered requirement (R18–R19, in [PRD-additions.md](PRD-additions.md)):
 
-- **Gasless checkout (R18).** The card-vs-stablecoin comparison lists "no token for gas" as a top failure reason. With USDC's EIP-3009, the buyer *signs* an authorisation for exactly the amount due, and the platform submits it and pays the gas. The buyer needs no ETH at all. The platform only sponsors exact-amount, exact-address authorisations (rate-limited), so gas sponsorship can't be abused. Verified on testnet from a wallet that only signed.
-- **Card → USDC on-ramp (R19, simulated).** For buyers who like the idea but hold no USDC: a licensed on-ramp partner charges the card and delivers USDC straight to the order's deposit address. The merchant still gets final, chargeback-free USDC, and the card chargeback risk moves to the partner.
-- **Payment links (R20) and a merchant API (R21).** Target merchants mostly have no developers, so no-code links are the default. The API is for merchants with their own store backend. It's idempotent on the merchant's order reference, which also enforces "one active request per order" (R1).
-- **Checkout funnel (R22).** Completion rate alone isn't actionable. The funnel splits it into view → request → connect → sign → detected → success and records *why* buyers drop (rejected in wallet, no gas, insufficient USDC, wrong network).
-- **Refunds for exchange payers (R23), answering PRD open question #1.** "Refund to the original address only" breaks when the payer is an exchange hot wallet. In that case only, the buyer gets a claim link at the order's email, proves it with a one-time code, and names a wallet they control. That wallet must not be another exchange address and is screened before any money moves. Every other refund stays original-address-only.
+- **Gasless checkout (R18).** The card-vs-stablecoin comparison lists "no token for gas" as a top failure reason. With USDC's EIP-3009, the buyer *signs* an authorisation for exactly the amount due, and the platform submits it and pays the gas. The platform only sponsors exact-amount, exact-address authorisations (rate-limited), so gas sponsorship can't be abused. Verified on testnet from a brand-new wallet holding exactly 0 ETH: it signed, the order succeeded, and it still held 0 ETH afterwards.
+- **Checkout funnel (R19).** Completion rate alone isn't actionable. The funnel splits it into view → request → connect → sign → detected → success and records *why* buyers drop (rejected in wallet, no gas, insufficient USDC, wrong network).
+
+The prototype's homepage walks through these decisions in a three-part [main flow](../README.md#main-flow), with steps that complete themselves as the app sees them happen.
 
 ## 5. Key trade-offs
 
@@ -69,7 +68,7 @@ Running the prototype surfaced gaps that the PRD only listed as open questions o
 Waiting for full finality before telling the buyer anything would mean minutes of spinner at checkout. Showing success at the first block would let a reorg release money the merchant never really got. So the prototype uses two states. The buyer sees success after 10 blocks (3.4 s median, *measured*). Merchant funds become available only once the block is in the chain's **L1-safe head** (92 s median, *measured*), with a fresh reorg check right before release. I first set this as "15 confirmations", assuming 2-second blocks. Measuring the real chain (0.2 s per block) showed that meant about 3 seconds, which is why the rule is now tied to L1 posting rather than a block count.
 
 **Refund only to the original paying address, not to an address the buyer provides.**
-"Send it to this other address" is the classic fraud and laundering path. The cost is real: a buyer who paid from an exchange's hot wallet may not receive the refund. The checkout tells buyers to pay from their own wallet, and exchange payers are the one exception, handled by the verified claim flow in R23.
+"Send it to this other address" is the classic fraud and laundering path. The cost is real: a buyer who paid from an exchange's hot wallet may not receive the refund. The checkout tells buyers to pay from their own wallet, and how to serve exchange payers remains an open question in the PRD.
 
 **Default settlement: convert to SGD daily, rather than holding USDC.**
 Target merchants pay rent and salaries in SGD, and for a crypto-unfamiliar merchant "money back in my bank" is the strongest reassurance. Holding USDC (with whitelisted withdrawals and second-factor verification) is one switch away.
@@ -103,12 +102,12 @@ Guardrails (must not get worse): refund failure rate, screening false-positive r
 
 - **Regulatory.** The travel-rule tiers follow [MAS Notice PSN02](https://www.mas.gov.sg/-/media/amld-amendments---30-june-2025/mas-notice-psn02.pdf) (last revised 30 June 2025): paragraph 13.4 up to S$1,500 and paragraph 13.6 above it. Above the threshold, the notice also requires verifying the originator's identity. The prototype collects the fields but doesn't perform that verification. The threshold is a config value, not hard-coded. Self-hosted wallets get a free signature proof of control for enhanced-tier orders. This isn't legal advice, and the fictional PSP is assumed to be licensed.
 - **Screening is a demo list.** Production would use a sanctions and blockchain-analytics provider. Screening runs on payers before funds are credited, and on refund destinations before money moves.
-- **Out of scope:** other stablecoins, a real fiat on-ramp (R19 is simulated), disputes and arbitration, partial refunds, multi-language checkout, subscriptions.
+- **Out of scope:** other stablecoins, buyer fiat on-ramp, disputes and arbitration, partial refunds, multi-language checkout, subscriptions.
 - **Prototype limits:** testnet only; on-chain amounts scaled to 1/100 because the faucet gives 20 USDC every 2 hours; no treasury sweep; no auth on dashboards. Refunds of orders already converted to SGD are blocked, because they would need a payout debit that isn't modelled.
 
 ## 8. Retrospective
 
 - **What I'd keep.** Writing the exception table *before* the UI. Every row became a state and a default action, and the hardest bugs were all in those rows.
 - **What surprised me.** "It works on testnet" was not the same as "the risk model is right". The finality rule was wrong by 10× until I measured block times. An adversarial review found double-refund and stranded-funds paths that no happy-path demo would show.
-- **What I'd do next.** Interview 5–10 merchants about "USD ledger, periodic SGD conversion". Replace the demo exchange labels and screening list with a real analytics provider. Add a second live chain to test whether the chain picker really prevents wrong-chain sends.
+- **What I'd do next.** Interview 5–10 merchants about "USD ledger, periodic SGD conversion". Decide the refund policy for buyers who paid from an exchange. Replace the demo screening list with a real analytics provider. Add a second live chain to test whether the chain picker really prevents wrong-chain sends.
 - **How AI changed the work.** I built the prototype with AI coding tools, then ran a separate AI review given only the code. It found 11 issues that happy-path testing missed, and each became a regression test. AI also made wrong assumptions, including the block time behind the finality rule, so I checked the numbers against the real chain.

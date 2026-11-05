@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 async function post(body: unknown) {
   const res = await fetch("/api/merchant/settlement", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -12,6 +13,7 @@ async function post(body: unknown) {
 
 export function WhitelistForm({ demoCode }: { demoCode: string }) {
   const router = useRouter();
+  const t = useT();
   const [address, setAddress] = useState("");
   const [label, setLabel] = useState("");
   const [step, setStep] = useState<1 | 2>(1);
@@ -22,19 +24,19 @@ export function WhitelistForm({ demoCode }: { demoCode: string }) {
     <div className="space-y-3">
       {step === 1 ? (
         <>
-          <input className="input mono" placeholder="0x… wallet address" value={address} onChange={(e) => setAddress(e.target.value)} />
-          <input className="input" placeholder="Label (e.g. Company Safe)" value={label} onChange={(e) => setLabel(e.target.value)} />
+          <input className="input mono" placeholder={t("0x… wallet address")} value={address} onChange={(e) => setAddress(e.target.value)} />
+          <input className="input" placeholder={t("Label (e.g. Company Safe)")} value={label} onChange={(e) => setLabel(e.target.value)} />
           <button className="btn-secondary btn-sm" disabled={!address} onClick={() => setStep(2)}>
-            Continue — verify
+            {t("Continue — verify")}
           </button>
         </>
       ) : (
         <>
           <p className="text-xs text-slate-600">
-            New whitelist addresses need a second verification (R11). We sent a code to the account owner&apos;s authenticator.
-            <span className="ml-1 sim-tag">Demo code: {demoCode}</span>
+            {t("New whitelist addresses need a second verification (R11). We sent a code to the account owner's authenticator.")}
+            <span className="ml-1 sim-tag">{t("Demo code: {code}", { code: demoCode })}</span>
           </p>
-          <input className="input mono" placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value)} />
+          <input className="input mono" placeholder={t("6-digit code")} value={code} onChange={(e) => setCode(e.target.value)} />
           <div className="flex gap-2">
             <button
               className="btn-primary btn-sm"
@@ -50,16 +52,16 @@ export function WhitelistForm({ demoCode }: { demoCode: string }) {
                   setCode("");
                   router.refresh();
                 } catch (e) {
-                  setErr((e as Error).message);
+                  setErr(t((e as Error).message));
                 } finally {
                   setBusy(false);
                 }
               }}
             >
-              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Verify & add
+              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {t("Verify & add")}
             </button>
             <button className="btn-secondary btn-sm" onClick={() => setStep(1)}>
-              Back
+              {t("Back")}
             </button>
           </div>
         </>
@@ -71,10 +73,11 @@ export function WhitelistForm({ demoCode }: { demoCode: string }) {
 
 export function WithdrawForm({ wallets }: { wallets: { address: string; label: string }[] }) {
   const router = useRouter();
+  const t = useT();
   const [address, setAddress] = useState(wallets[0]?.address ?? "");
   const [amount, setAmount] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  if (!wallets.length) return <p className="text-xs text-slate-500">Add a whitelisted wallet first.</p>;
+  if (!wallets.length) return <p className="text-xs text-slate-500">{t("Add a whitelisted wallet first.")}</p>;
   return (
     <div className="space-y-2">
       <select className="input" value={address} onChange={(e) => setAddress(e.target.value)}>
@@ -85,7 +88,7 @@ export function WithdrawForm({ wallets }: { wallets: { address: string; label: s
         ))}
       </select>
       <div className="flex gap-2">
-        <input className="input" placeholder="Amount in USDC" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input className="input" placeholder={t("Amount in USDC")} value={amount} onChange={(e) => setAmount(e.target.value)} />
         <button
           className="btn-primary btn-sm shrink-0"
           onClick={async () => {
@@ -95,11 +98,11 @@ export function WithdrawForm({ wallets }: { wallets: { address: string; label: s
               setAmount("");
               router.refresh();
             } catch (e) {
-              setErr((e as Error).message);
+              setErr(t((e as Error).message));
             }
           }}
         >
-          Withdraw
+          {t("Withdraw")}
         </button>
       </div>
       {err && <p className="text-xs text-rose-600">{err}</p>}

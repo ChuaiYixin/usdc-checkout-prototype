@@ -15,6 +15,13 @@
       "when": 1792809976104,
       "tag": "0001_innovations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793875971242,
+      "tag": "0002_remove_extras",
+      "breakpoints": true
     }
   ]
 }

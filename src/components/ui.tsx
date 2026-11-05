@@ -1,17 +1,22 @@
 import Link from "next/link";
 import { ExternalLink, FlaskConical } from "lucide-react";
+import { T } from "@/i18n/client";
 
 export function TestnetDisclaimer({ className = "" }: { className?: string }) {
   return (
     <p className={`text-center text-xs text-slate-500 ${className}`}>
       <FlaskConical className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
-      This prototype connects to testnets only and does not process real funds.
+      <T>This prototype connects to testnets only and does not process real funds.</T>
     </p>
   );
 }
 
-export function SimTag({ children = "Simulated" }: { children?: React.ReactNode }) {
-  return <span className="sim-tag">{children}</span>;
+export function SimTag({ children = "Simulated" }: { children?: string }) {
+  return (
+    <span className="sim-tag">
+      <T>{children}</T>
+    </span>
+  );
 }
 
 const TONES: Record<string, string> = {

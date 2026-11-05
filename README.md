@@ -4,7 +4,7 @@
 
 > ⚠️ **This prototype connects to testnets only and does not process real funds.** The merchant ("Atelier Kelong") and the payment service provider are fictional. FX conversion and bank credits are simulated and labelled as such in the UI.
 
-Part of a product-management portfolio. The product requirements are in [`docs/PRD.md`](docs/PRD.md) (Chinese), with requirement IDs R1–R17 traced in the [table below](#requirement-traceability).
+Part of a product-management portfolio. The product requirements are in [`docs/PRD.md`](docs/PRD.md) (Chinese), with requirement IDs traced in the [table below](#requirement-traceability). The interface switches between English and 中文 from the control in the bottom-right corner. New here? Open the homepage and follow the [main flow](#main-flow).
 
 ---
 
@@ -15,7 +15,7 @@ End-to-end run on 2026-10-24 (order `ORD-30018`, 120 USD → 1.20 test USDC at 1
 - **Payment** buyer → per-order deposit address, auto-matched to the order: [`0xf56a0715…eb46559a`](https://sepolia.basescan.org/tx/0xf56a0715811dc7d7c74eed23e48dd15e62801f5cd276910322c5ae5aeb46559a)
 - **Refund** in full to the original address via EIP-3009, gas paid by the platform: [`0x42431e65…10667b40`](https://sepolia.basescan.org/tx/0x42431e654ac69d1795951f61a118ba47a5077520e01dfe8cfe4b661910667b40)
 
-- **Gasless payment** (`ORD-95228`): the buyer only *signed* an EIP-3009 authorisation; the platform submitted it and paid the gas. The order matched and succeeded normally. [tx](https://sepolia.basescan.org/tx/0x2e4477588c28ab5797c96b056d066cc089a6d700f0c872e9a4b61075a4e102dc)
+- **Gasless payment** (`ORD-52794`): a brand-new wallet holding 1.20 test USDC and exactly **0 ETH** signed an EIP-3009 authorisation; the platform submitted it and paid the gas. The order matched and succeeded normally, and the wallet still held 0 ETH afterwards. [tx](https://sepolia.basescan.org/tx/0x2282b0b0162e692d716292d114884f9b0928f0ea098fc2d63791d924a8546667)
 
 Exception paths, also on the real testnet:
 
@@ -24,9 +24,9 @@ Exception paths, also on the real testnet:
 
 ## Screenshots
 
-| Buyer checkout | Payment page | Paid (underpay → top-up, real testnet) |
+| Buyer checkout | Payment page: sign once, platform pays gas | Paid (underpay → top-up, real testnet) |
 | --- | --- | --- |
-| ![Checkout](docs/screenshots/01-checkout.png) | ![Pay](docs/screenshots/02-pay.png) | ![Success](docs/screenshots/03-pay-success.png) |
+| ![Checkout](docs/screenshots/01-checkout.png) | ![Pay](docs/screenshots/02-pay.jpg) | ![Success](docs/screenshots/03-pay-success.png) |
 
 | Merchant overview | Order detail: two real transfers matched to one order | Webhooks with retries |
 | --- | --- | --- |
@@ -36,13 +36,21 @@ Exception paths, also on the real testnet:
 | --- | --- | --- |
 | ![Exceptions](docs/screenshots/07-exceptions.png) | ![Reconciliation](docs/screenshots/08-reconciliation.png) | ![Mobile](docs/screenshots/09-mobile-pay.jpg) |
 
-| Gasless checkout: sign once, platform pays gas | No USDC? Card on-ramp (simulated) | Order paid from an exchange wallet |
-| --- | --- | --- |
-| ![Gasless](docs/screenshots/14-gasless-pay.jpg) | ![On-ramp](docs/screenshots/15-card-onramp.jpg) | ![Exchange](docs/screenshots/12-exchange-refund-order.png) |
+| PRD metrics + checkout funnel | Main flow on the homepage |
+| --- | --- |
+| ![Metrics](docs/screenshots/10-metrics.png) | ![Main flow](docs/screenshots/11-main-flow.png) |
 
-| PRD metrics + checkout funnel | Merchant API docs | Exchange payer → verified refund claim |
+## Main flow
+
+The homepage takes you through the product in three parts. A card follows you from page to page with the current step, and most steps move on by themselves once the app's records show them happening. Everything is in both English and Chinese.
+
+| Part | What you do | What it shows |
 | --- | --- | --- |
-| ![Metrics](docs/screenshots/10-metrics.png) | ![Developers](docs/screenshots/11-developers.png) | ![Claim](docs/screenshots/13-refund-claim.png) |
+| 1. Take a payment | Check out, pay with test USDC, open the order | The whole chain to the merchant, and why buyer and merchant get different answers at different times |
+| 2. Handle a payment that goes wrong | Underpay and top up; pay from a flagged wallet | Rules for irreversible mistakes, and what each role gets to see |
+| 3. Refund, settle and reconcile | Refund, run the SGD settlement, read reconciliation | Why refunds only go to the original address, and what the merchant needs after the USDC arrives |
+
+Part 1 pays and part 3 refunds about 1.20 test USDC on the real testnet. Part 2 and the FX and bank legs use the simulator.
 
 ## What's real and what's simulated
 
@@ -70,7 +78,7 @@ flowchart LR
     P["/pay/:id payment page"]
     API[API routes]
     M["/merchant dashboard"]
-    O["/ops exception queue · compliance · simulator"]
+    O["/ops exception queue · compliance · metrics · simulator"]
     MM["/api/mock-merchant/webhook<br/>(stand-in merchant server)"]
   end
   subgraph Worker
@@ -153,7 +161,7 @@ Other scripts:
 
 ### Dev-only test wallet (no MetaMask needed)
 
-Set `NEXT_PUBLIC_DEV_TEST_WALLET=1` in `.env` and restart `npm run dev`. The payment page then shows a dashed **"Use test wallet (dev only)"** button. It's an EIP-1193 provider plugged into wagmi's `injected` connector, so the page runs exactly the code path MetaMask would: connect → switch chain → `transfer()` → wait, plus the ownership signature for large orders. Signing happens server-side with `TEST_BUYER_PRIVATE_KEY`. The route refuses anything except USDC `transfer()` calls and ownership messages, and it's disabled in production builds. The real-wallet path is identical apart from the provider.
+Set `NEXT_PUBLIC_DEV_TEST_WALLET=1` in `.env` and restart `npm run dev`. The payment page then shows a dashed **"Use test wallet (dev only)"** button. It's an EIP-1193 provider plugged into wagmi's `injected` connector, so the page runs exactly the code path MetaMask would: connect → switch chain → `transfer()` → wait, plus the ownership signature for large orders. Signing happens server-side with `TEST_BUYER_PRIVATE_KEY`. The route refuses anything except USDC `transfer()` calls, USDC transfer authorisations and ownership messages, and it's disabled in production builds. The real-wallet path is identical apart from the provider.
 
 ### Getting testnet funds
 
@@ -176,12 +184,8 @@ USDC on Base Sepolia: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`, verified aga
 6. **Refund:** on the order page, click **Refund in full**. The destination is re-screened, then the deposit address signs an EIP-3009 authorisation and the gas sponsor submits it. A real refund transaction appears on Basescan.
 7. **Settlement and reconciliation:** on `/merchant/settlement`, click **Run today's settlement** (simulated). Then on `/merchant/reconciliation`, see your order matched across all three columns. The seeded days show the two deliberate breaks in red. Export the CSV.
 8. **Edge cases:** use `/ops/simulator` to underpay, overpay, send USDT, pay from a screened address or pay late. Then handle each case in `/ops/exceptions`.
-9. **Gasless and card:** on the payment page, **"Pay … — no gas needed"** asks the wallet for one signature, and the platform submits and pays gas. The **"No USDC? Use a card"** tab walks through a simulated on-ramp partner.
-10. **Merchant onboarding:** create a no-code link at `/merchant/links`, or a test API key at `/merchant/developers` (copy-paste `curl` included).
-11. **Exchange payer:** in `/ops/simulator`, choose **Pay from an exchange**, then **Refund via claim link** on the order. Open the buyer's claim page, enter the demo code and a wallet address, and the refund goes there after screening.
-12. **Metrics:** `/ops/metrics` computes the PRD's metrics live from the prototype's own records: completion rate, exception rate, median time to buyer success and to merchant funds available, auto-match rate and auto-reconciliation rate.
-
-A 60-second recording script is in [`docs/demo-script.md`](docs/demo-script.md).
+9. **Gasless:** on the payment page, **"Pay … — no gas needed"** asks the wallet for one signature, and the platform submits and pays gas.
+10. **Metrics:** `/ops/metrics` computes the PRD's metrics live from the prototype's own records: completion rate, exception rate, median time to buyer success and to merchant funds available, auto-match rate and auto-reconciliation rate, plus the checkout funnel.
 
 ## Requirement traceability
 
@@ -205,20 +209,16 @@ A 60-second recording script is in [`docs/demo-script.md`](docs/demo-script.md).
 | R16 | Restricted regions don't see USDC; list editable by compliance | `/ops/compliance`, `CheckoutForm.tsx`, server check in `createCheckout` |
 | R17 | Partial refunds, multi-language checkout | Out of scope (v2), as in the PRD |
 | R18 | **Gasless checkout**: buyer signs, platform pays gas (EIP-3009) | `api/payments/[id]/gasless`, `PayClient.tsx` `payGasless` |
-| R19 | **Card → USDC on-ramp** for buyers without USDC (simulated partner) | `api/payments/[id]/onramp`, `PayClient.tsx` `CardOnramp` |
-| R20 | **Payment links** for no-code merchants | `/merchant/links`, `/l/[id]` |
-| R21 | **Merchant API v1**: API keys, idempotent on `merchant_reference` | `/api/v1/payment_requests`, `/merchant/developers` |
-| R22 | **Checkout funnel** and drop-off reasons | `src/lib/funnel.ts`, `/ops/metrics` |
-| R23 | **Exchange-payer refunds** via a verified refund-address claim | `src/lib/refund-claims.ts`, `/refund-claim/[id]` |
+| R19 | **Checkout funnel** and drop-off reasons | `src/lib/funnel.ts`, `/ops/metrics` |
 
-R18–R23 were added after the prototype exposed gaps in the PRD. Rationale and acceptance criteria are in [`docs/PRD-additions.md`](docs/PRD-additions.md).
+R18–R19 were added after the prototype exposed gaps in the PRD. Rationale and acceptance criteria are in [`docs/PRD-additions.md`](docs/PRD-additions.md).
 
 PRD decisions that show up in the code:
 
 1. **Three chains, one live:** `CHAINS` in `src/config/chains.ts`.
 2. **Split thresholds, calibrated on the real chain:** Base Sepolia produces a block every 0.2 s (measured over 10,000 blocks). The buyer sees success after 10 blocks, about 2 s (50 blocks, about 10 s, for orders ≥ $1,000). Merchant funds become available only when the block is at or below the OP Stack **`safe` head**, meaning it has been posted to Ethereum L1. That lag is about 1–2 min; `finalized` would be about 15–16 min, the option for very large amounts. Reorg checks run again before funds are released. A block count (300) is the fallback for RPCs without the `safe` tag. Exact production values are still an open PRD question for engineering.
 3. **USD pricing, 15-minute quote:** `PAYMENT_REQUEST_TTL_MS`.
-4. **Refunds only to the original address:** `createRefund` has no "new address" path.
+4. **Refunds only to the address that paid:** there is no way for a buyer or merchant to enter a different refund address. How to serve buyers who paid from an exchange is still an open PRD question.
 5. **Default to daily SGD conversion:** the settings default is `auto_sgd`.
 
 ## Technical decisions (and deviations from the original plan)
@@ -233,10 +233,12 @@ PRD decisions that show up in the code:
 
 ## Testing
 
-`npm test` runs 30 offline tests against a throwaway SQLite file. Transfers are injected through the same `ingestTransfer` entry point the scanner uses, and the chain head is set by hand, so no RPC or test funds are needed.
+`npm test` runs 34 offline tests against throwaway SQLite files. Transfers are injected through the same `ingestTransfer` entry point the scanner uses, and the chain head is set by hand, so no RPC or test funds are needed.
 
 - `tests/engine.test.ts` covers the PRD rules: one active request per order (R1), unique addresses (R7), region gating (R16), travel-rule tiers, exact/under/over/late/non-USDC/screened payments, duplicate log de-duplication, the expiry race, and L1-safe finality.
 - `tests/regressions.test.ts` pins the bugs found by an independent review pass. Examples: a late transfer taking over an in-progress payment, non-idempotent "refund in full", retrying non-failed refunds, money arriving on a refunded order, flagged extra payments, and settlement of funds that are mid-refund.
+- `tests/features.test.ts` covers gasless checkout rules, the funnel and the main flow's automatic checks.
+- `tests/i18n.test.ts` checks that every string sent through the translator has a Chinese entry, and that translations keep their placeholders.
 
 Beyond the offline tests, the real-testnet runs listed under [Verified on Base Sepolia](#verified-on-base-sepolia) exercise the same paths end to end.
 
@@ -248,7 +250,7 @@ Beyond the offline tests, the real-testnet runs listed under [Verified on Base S
 - FX, bank payouts, whitelist 2FA and withdrawals are simulated. Platform fee (1.00%) and FX spread (0.30%) are illustrative numbers, not real pricing.
 - The travel-rule tiers follow MAS Notice PSN02 (last revised 30 June 2025), paragraphs 13.4 and 13.6. The prototype collects the fields but doesn't perform the identity verification the notice requires above S$1,500. Converting the threshold to USD uses a simulated rate.
 - No authentication on the dashboards or ops tools.
-- Funds stay on the per-order deposit addresses; there's no treasury sweep. Watching stops 7 days after a request is created. After downtime the worker catches up in bounded slices (6,000 blocks per tick) and never skips blocks.
+- Funds stay on the per-order deposit addresses; there's no treasury sweep. Watching stops 7 days after a request is created. After downtime the worker resumes at the chain tip, so new payments are seen right away, and rechecks the missed blocks in the background. Blocks older than the oldest watched request are not rechecked, since no deposit address existed yet.
 - Refunds of orders already converted to SGD are blocked: they would need a debit on the next payout, which isn't modelled.
 - Native ETH sent to a deposit address isn't detected (only ERC-20 `Transfer` events are).
 - Third-party figures in the PRD (Stripe fees, etc.) are not shown as facts in the UI.
@@ -261,17 +263,19 @@ src/
     store/            buyer checkout
     pay/[id]/         payment page (wagmi)
     (admin)/merchant/ overview, orders, webhooks, settlement, reconciliation
-    (admin)/ops/      exception queue, compliance, simulator
+    (admin)/ops/      exception queue, compliance, metrics, simulator
     api/              route handlers (+ mock merchant webhook receiver)
   config/             chains, thresholds, product, compliance defaults
   db/                 Drizzle schema, client, migrations runner
+  i18n/               language switch and Chinese translations
+  guide/              the homepage's three-part main flow: steps, automatic checks, step card
   lib/                engine (scanner + state machine), refunds, webhooks, compliance,
                       settlement, reconciliation, simulator, seed data
 worker/index.ts       chain worker loop
 scripts/              setup, reset, wallets, pay:test, fund:sponsor
 tests/                offline state-machine + regression tests (node:test via tsx)
 drizzle/              SQL migrations
-docs/                 PRD (+ PRD-additions R18–R23), case study, demo script, screenshots
+docs/                 PRD (+ PRD-additions R18–R19), case study, screenshots
 ```
 
 ## Security notes

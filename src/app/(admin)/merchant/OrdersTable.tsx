@@ -5,23 +5,25 @@ import type { listOrders } from "@/lib/queries";
 import { ExplorerLink, SimTag } from "@/components/ui";
 import { FundsBadge, PrStatusBadge } from "@/components/status";
 import { Time } from "@/components/time";
+import { getT } from "@/i18n/server";
 
-export function OrdersTable({ rows }: { rows: Awaited<ReturnType<typeof listOrders>> }) {
-  if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">No orders yet — place one from the store checkout.</p>;
+export async function OrdersTable({ rows }: { rows: Awaited<ReturnType<typeof listOrders>> }) {
+  const t = await getT();
+  if (!rows.length) return <p className="p-8 text-center text-sm text-slate-500">{t("No orders yet — place one from the store checkout.")}</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead className="border-b border-line bg-slate-50/60">
           <tr>
-            <th className="th">Order</th>
-            <th className="th">Created (SGT)</th>
-            <th className="th">Customer</th>
-            <th className="th text-right">Amount</th>
-            <th className="th">Chain</th>
-            <th className="th">Tx hash</th>
-            <th className="th">Status</th>
-            <th className="th">Funds</th>
-            <th className="th text-right">Fee</th>
+            <th className="th">{t("Order")}</th>
+            <th className="th">{t("Created (SGT)")}</th>
+            <th className="th">{t("Customer")}</th>
+            <th className="th text-right">{t("Amount")}</th>
+            <th className="th">{t("Chain")}</th>
+            <th className="th">{t("Tx hash")}</th>
+            <th className="th">{t("Status")}</th>
+            <th className="th">{t("Funds")}</th>
+            <th className="th text-right">{t("Fee")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">

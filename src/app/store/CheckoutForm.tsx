@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { track } from "@/lib/track";
+import { useT } from "@/i18n/client";
 import { useRouter } from "next/navigation";
 import { CreditCard, Gem, Info, Loader2, Lock, Minus, Plus, ShieldAlert } from "lucide-react";
 import { COUNTRIES, MERCHANT, PRODUCTS, SHIPPING_CENTS, TESTNET_AMOUNT_DIVISOR } from "@/config/app";
@@ -18,6 +19,7 @@ interface Props {
 
 export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleThresholdSgd, travelRuleSource }: Props) {
   const router = useRouter();
+  const t = useT();
   const product = PRODUCTS[0];
   const [qty, setQty] = useState(2);
   const [form, setForm] = useState({
@@ -69,7 +71,7 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
       if (!res.ok) throw new Error(data.error || "Checkout failed");
       router.push(`/pay/${data.paymentRequestId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(t(err instanceof Error ? err.message : String(err)));
       setSubmitting(false);
     }
   }
@@ -81,10 +83,10 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
           <div className="flex items-center gap-2">
             <Gem className="h-5 w-5 text-stone-700" />
             <span className="font-serif text-xl tracking-wide text-stone-900">{MERCHANT.name}</span>
-            <span className="ml-2 hidden text-xs text-stone-500 sm:inline">{MERCHANT.tagline}</span>
+            <span className="ml-2 hidden text-xs text-stone-500 sm:inline">{t(MERCHANT.tagline)}</span>
           </div>
           <span className="flex items-center gap-1 text-xs text-stone-500">
-            <Lock className="h-3.5 w-3.5" /> Secure checkout
+            <Lock className="h-3.5 w-3.5" /> {t("Secure checkout")}
           </span>
         </div>
       </header>
@@ -92,58 +94,58 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
       <form onSubmit={placeOrder} className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[1fr_400px]">
         <div className="space-y-6">
           <section className="card p-6">
-            <h2 className="text-base font-semibold">Contact & shipping</h2>
+            <h2 className="text-base font-semibold">{t("Contact & shipping")}</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">Full name</label>
+                <label className="label">{t("Full name")}</label>
                 <input className="input" value={form.fullName} onChange={set("fullName")} required />
               </div>
               <div>
-                <label className="label">Email</label>
+                <label className="label">{t("Email")}</label>
                 <input className="input" type="email" value={form.email} onChange={set("email")} required />
               </div>
               <div className="sm:col-span-2">
-                <label className="label">Country / region</label>
+                <label className="label">{t("Country / region")}</label>
                 <select className="input" value={form.country} onChange={set("country")}>
                   {COUNTRIES.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.name}
+                      {t(c.name)}
                     </option>
                   ))}
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="label">Shipping address</label>
+                <label className="label">{t("Shipping address")}</label>
                 <input className="input" value={form.shippingAddress} onChange={set("shippingAddress")} required />
               </div>
             </div>
           </section>
 
           <section className="card p-6">
-            <h2 className="text-base font-semibold">Payment method</h2>
+            <h2 className="text-base font-semibold">{t("Payment method")}</h2>
             <div className="mt-4 space-y-3">
               {usdcAvailable ? (
                 <PayOption
                   checked={effectiveMethod === "usdc"}
                   onChange={() => setMethod("usdc")}
                   icon={<UsdcIcon className="h-7 w-7" />}
-                  title="Pay with USDC"
-                  subtitle="Base · no card fees, no chargebacks, settles in seconds"
-                  badge="New"
+                  title={t("Pay with USDC")}
+                  subtitle={t("Base · no card fees, no chargebacks, settles in seconds")}
+                  badge={t("New")}
                 />
               ) : (
                 // R16: restricted regions never see the USDC option.
                 <div className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
                   <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                  Stablecoin payment isn&apos;t available for your region.
+                  {t("Stablecoin payment isn't available for your region.")}
                 </div>
               )}
               <PayOption
                 checked={effectiveMethod === "card"}
                 onChange={() => setMethod("card")}
                 icon={<CreditCard className="h-6 w-6 text-slate-600" />}
-                title="Credit or debit card"
-                subtitle="Not part of this prototype"
+                title={t("Credit or debit card")}
+                subtitle={t("Not part of this prototype")}
                 disabled
               />
             </div>
@@ -154,29 +156,29 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
                   <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                   <div>
                     <p className="font-medium text-slate-700">
-                      {enhanced ? "Additional payer information required" : "Payer information"}
+                      {t(enhanced ? "Additional payer information required" : "Payer information")}
                     </p>
                     <p className="mt-0.5">
-                      Regulated payment providers must pass payer details with crypto transfers (travel rule).
+                      {t("Regulated payment providers must pass payer details with crypto transfers (travel rule).")}{" "}
                       {enhanced
-                        ? ` Orders above S$${travelRuleThresholdSgd.toLocaleString()} need a few more details.`
-                        : " Your name and country above are enough for this order."}
+                        ? t("Orders above S${n} need a few more details.", { n: travelRuleThresholdSgd.toLocaleString() })
+                        : t("Your name and country above are enough for this order.")}
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-400">Threshold source: {travelRuleSource}.</p>
+                    <p className="mt-1 text-[11px] text-slate-400">{t("Threshold source: {source}.", { source: t(travelRuleSource) })}</p>
                   </div>
                 </div>
                 {enhanced && (
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <label className="label">Residential address</label>
+                      <label className="label">{t("Residential address")}</label>
                       <input className="input" value={form.residentialAddress} onChange={set("residentialAddress")} required />
                     </div>
                     <div>
-                      <label className="label">Date of birth</label>
+                      <label className="label">{t("Date of birth")}</label>
                       <input className="input" type="date" value={form.dateOfBirth} onChange={set("dateOfBirth")} required />
                     </div>
                     <p className="self-end text-[11px] text-slate-500">
-                      You&apos;ll also sign a free message to prove you control the paying wallet.
+                      {t("You'll also sign a free message to prove you control the paying wallet.")}
                     </p>
                   </div>
                 )}
@@ -187,20 +189,20 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
 
         <aside className="space-y-4">
           <section className="card p-6">
-            <h2 className="text-base font-semibold">Order summary</h2>
+            <h2 className="text-base font-semibold">{t("Order summary")}</h2>
             <div className="mt-4 flex gap-4">
               <div className={`h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br ${product.hue} grid place-items-center`}>
                 <Gem className="h-8 w-8 text-stone-500/70" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">{product.name}</p>
-                <p className="text-xs text-slate-500">{product.variant}</p>
+                <p className="text-sm font-medium">{t(product.name)}</p>
+                <p className="text-xs text-slate-500">{t(product.variant)}</p>
                 <div className="mt-2 flex items-center gap-2">
-                  <button type="button" className="btn-secondary btn-sm px-2" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease">
+                  <button type="button" className="btn-secondary btn-sm px-2" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label={t("Decrease")}>
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="w-6 text-center text-sm tabular-nums">{qty}</span>
-                  <button type="button" className="btn-secondary btn-sm px-2" onClick={() => setQty((q) => Math.min(50, q + 1))} aria-label="Increase">
+                  <button type="button" className="btn-secondary btn-sm px-2" onClick={() => setQty((q) => Math.min(50, q + 1))} aria-label={t("Increase")}>
                     <Plus className="h-3 w-3" />
                   </button>
                   <span className="ml-auto text-sm tabular-nums">{formatUsd(subtotal)}</span>
@@ -208,23 +210,23 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
               </div>
             </div>
             <dl className="mt-6 space-y-2 border-t border-line pt-4 text-sm">
-              <Row label="Subtotal" value={formatUsd(subtotal)} />
-              <Row label="Shipping (Singapore → US)" value={formatUsd(SHIPPING_CENTS)} />
+              <Row label={t("Subtotal")} value={formatUsd(subtotal)} />
+              <Row label={t("Shipping (Singapore → US)")} value={formatUsd(SHIPPING_CENTS)} />
               <div className="flex justify-between border-t border-line pt-3 text-base font-semibold">
-                <dt>Total</dt>
+                <dt>{t("Total")}</dt>
                 <dd className="tabular-nums">{formatUsd(total)}</dd>
               </div>
             </dl>
             {effectiveMethod === "usdc" && (
               <p className="mt-2 text-right text-xs text-slate-500">
                 = {(total / 100).toFixed(2)} USDC
-                {TESTNET_AMOUNT_DIVISOR > 1 && ` (testnet: ${(total / 100 / TESTNET_AMOUNT_DIVISOR).toFixed(2)} test USDC on-chain)`}
+                {TESTNET_AMOUNT_DIVISOR > 1 && ` ${t("(testnet: {n} test USDC on-chain)", { n: (total / 100 / TESTNET_AMOUNT_DIVISOR).toFixed(2) })}`}
               </p>
             )}
             {error && <p className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
             <button className="btn-primary mt-6 w-full py-3 text-base" disabled={submitting || effectiveMethod !== "usdc"}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UsdcIcon className="h-5 w-5" mono />}
-              {effectiveMethod === "usdc" ? `Pay ${(total / 100).toFixed(2)} USDC` : "Card checkout not in prototype"}
+              {effectiveMethod === "usdc" ? t("Pay {n} USDC", { n: (total / 100).toFixed(2) }) : t("Card checkout not in prototype")}
             </button>
           </section>
           <TestnetDisclaimer />

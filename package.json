@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "concurrently -k -n web,worker \"next start\" \"tsx worker/index.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/unit.test.ts tests/engine.test.ts tests/regressions.test.ts tests/features.test.ts",
+    "test": "tsx --test tests/unit.test.ts tests/engine.test.ts tests/regressions.test.ts tests/features.test.ts tests/i18n.test.ts",
     "db:reset": "tsx scripts/reset-db.ts",
     "wallets": "tsx scripts/wallets.ts",
     "pay:test": "tsx scripts/pay-test.ts",

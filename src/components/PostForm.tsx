@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 type Field = { name: string; placeholder: string; mono?: boolean; options?: { value: string; label: string }[]; width?: string };
 
 /** Small inline form that POSTs {...extra, ...fields} and shows the JSON `message` (if any). */
 export function PostForm({ url, extra, fields, submitLabel }: { url: string; extra?: Record<string, unknown>; fields: Field[]; submitLabel: string }) {
   const router = useRouter();
+  const t = useT();
   const [values, setValues] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.name, f.options?.[0]?.value ?? ""])));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -23,11 +25,11 @@ export function PostForm({ url, extra, fields, submitLabel }: { url: string; ext
           const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...extra, ...values }) });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error);
-          if (data.message) setMsg({ ok: true, text: data.message });
+          if (data.message) setMsg({ ok: true, text: t(data.message) });
           setValues(Object.fromEntries(fields.map((f) => [f.name, f.options?.[0]?.value ?? ""])));
           router.refresh();
         } catch (err) {
-          setMsg({ ok: false, text: (err as Error).message });
+          setMsg({ ok: false, text: t((err as Error).message) });
         } finally {
           setBusy(false);
         }

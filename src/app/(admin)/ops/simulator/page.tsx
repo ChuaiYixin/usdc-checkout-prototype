@@ -8,8 +8,10 @@ import { PrStatusBadge } from "@/components/status";
 import { SimTag } from "@/components/ui";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
+import { getT } from "@/i18n/server";
 
 export default async function SimulatorPage() {
+  const t = await getT();
   const prs = await db.select().from(schema.paymentRequests).orderBy(desc(schema.paymentRequests.createdAt)).limit(12);
   const now = Date.now();
   return (
@@ -17,11 +19,10 @@ export default async function SimulatorPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            Payment simulator <SimTag />
+            {t("Payment simulator")} <SimTag />
           </h1>
           <p className="max-w-3xl text-sm text-slate-500">
-            Injects a simulated transfer into the same pipeline the real Base Sepolia scanner feeds — confirmations still tick with real
-            blocks. Use it to demo edge cases without spending faucet USDC. Simulated funds are refunded only in the database.
+            {t("Injects a simulated transfer into the same pipeline the real Base Sepolia scanner feeds — confirmations still tick with real blocks. Use it to demo edge cases without spending faucet USDC. Simulated funds are refunded only in the database.")}
           </p>
         </div>
         <ActionButton
@@ -29,16 +30,19 @@ export default async function SimulatorPage() {
           body={{ quantity: 2, fullName: "Sim Buyer", email: "sim@example.com", country: "US", shippingAddress: "Test address" }}
           className="btn-primary"
         >
-          New demo order (120 USD)
+          {t("New demo order (120 USD)")}
         </ActionButton>
       </div>
 
       <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
         {SCENARIOS.map((s) => (
           <p key={s.key}>
-            <b className="text-slate-700">{s.label}:</b> {s.hint}
+            <b className="text-slate-700">{t(s.label)}:</b> {t(s.hint)}
           </p>
         ))}
+        <p>
+          <b className="text-slate-700">{t("Expire now")}:</b> {t("Closes the 15-minute window immediately, so you don't have to wait")}
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -53,19 +57,24 @@ export default async function SimulatorPage() {
                 <PrStatusBadge status={pr.status} />
                 <span className="text-sm">{formatUsdc(pr.amountMicros)} USDC</span>
                 <span className="text-xs text-slate-500">
-                  {expired ? "expired" : "expires"} <Time ms={pr.expiresAt} />
+                  {t(expired ? "expired" : "expires")} <Time ms={pr.expiresAt} />
                 </span>
                 {pr.simulated ? <SimTag>Has simulated funds</SimTag> : null}
                 <Link href={`/pay/${pr.id}`} target="_blank" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
-                  Buyer view <ExternalLink className="h-3 w-3" />
+                  {t("Buyer view")} <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {SCENARIOS.map((s) => (
                   <ActionButton key={s.key} url="/api/ops/simulate" body={{ paymentRequestId: pr.id, scenario: s.key }}>
-                    {s.label}
+                    {t(s.label)}
                   </ActionButton>
                 ))}
+                {["awaiting_payment", "underpaid"].includes(pr.status) && (
+                  <ActionButton url="/api/ops/simulate" body={{ paymentRequestId: pr.id, scenario: "expire_now" }}>
+                    {t("Expire now")}
+                  </ActionButton>
+                )}
               </div>
             </div>
           );

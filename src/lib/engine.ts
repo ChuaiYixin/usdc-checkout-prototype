@@ -27,9 +27,17 @@ type PR = typeof schema.paymentRequests.$inferSelect;
 type Transfer = typeof schema.transfers.$inferSelect;
 
 const CHUNK = 150n; // public Base Sepolia RPC caps eth_getLogs at 200 blocks
-const MAX_BACKLOG_PER_TICK = 6000n;
+const MAX_HEAD_LAG = 600n; // about 2 minutes of blocks; beyond this the head jumps and the range becomes a gap
+const HEAD_RESUME_LAG = 100n;
+const BACKFILL_CHUNKS_PER_TICK = 8;
 const WATCH_WINDOW_MS = 7 * 24 * 3600 * 1000; // keep watching addresses for late arrivals
 const cursorKey = `cursor:${LIVE_CHAIN.key}`;
+const gapKey = `scan_gap:${LIVE_CHAIN.key}`;
+
+export interface Gap {
+  from: bigint;
+  to: bigint;
+}
 
 const blockTsCache = new Map<bigint, number>();
 async function blockTimestamp(n: bigint) {
@@ -107,39 +115,67 @@ async function watchedRequests() {
     .where(and(eq(schema.paymentRequests.chainKey, LIVE_CHAIN.key), gte(schema.paymentRequests.createdAt, Date.now() - WATCH_WINDOW_MS)));
 }
 
+/**
+ * After downtime the head must not wait for the backlog, or a payment made right now stays invisible for hours.
+ * So the head jumps close to the chain tip and the skipped range is remembered as a gap, backfilled a slice per tick.
+ */
+export function planHead(cursor: bigint, latest: bigint, gap: Gap | null): { cursor: bigint; gap: Gap | null } {
+  if (latest - cursor <= MAX_HEAD_LAG) return { cursor, gap };
+  const jumpTo = latest - HEAD_RESUME_LAG;
+  return { cursor: jumpTo, gap: { from: gap ? (gap.from < cursor + 1n ? gap.from : cursor + 1n) : cursor + 1n, to: jumpTo } };
+}
+
+/** Nothing older than the oldest watched request can matter: no deposit address existed back then. */
+export function trimGap(gap: Gap | null, oldestRequestBlock: bigint | null): Gap | null {
+  if (!gap || oldestRequestBlock === null) return null; // nothing being watched → nothing to find
+  const from = gap.from > oldestRequestBlock ? gap.from : oldestRequestBlock;
+  return from > gap.to ? null : { from, to: gap.to };
+}
+
 export async function scan() {
   const client = publicClient();
   const latest = await client.getBlockNumber();
   const saved = await getSetting(cursorKey);
-  let cursor = saved ? BigInt(saved) : latest - 20n;
-  if (latest - cursor > MAX_BACKLOG_PER_TICK) {
-    // Never skip blocks (a skipped range could hold a payment) — catch up a bounded slice per tick instead.
-    console.warn(`[scan] ${latest - cursor} blocks behind; catching up ${MAX_BACKLOG_PER_TICK} blocks this tick`);
-  }
-  const target = latest - cursor > MAX_BACKLOG_PER_TICK ? cursor + MAX_BACKLOG_PER_TICK : latest;
-  if (target < latest) {
-    // heartbeat before the long catch-up slice so dashboards show "catching up" rather than "offline"
-    await setSetting("worker:heartbeat", JSON.stringify({ at: Date.now(), block: latest.toString(), watching: 0, behind: Number(latest - cursor) }));
-  }
+  const savedGap = await getSetting(gapKey);
+  const planned = planHead(saved ? BigInt(saved) : latest - 20n, latest, savedGap ? (JSON.parse(savedGap, (k, v) => (k === "from" || k === "to" ? BigInt(v) : v)) as Gap) : null);
+  let cursor = planned.cursor;
+
   const prs = await watchedRequests();
   const byAddress = new Map(prs.map((p) => [p.address.toLowerCase(), p]));
   const addresses = [...byAddress.keys()] as `0x${string}`[];
   let found = 0;
 
-  while (cursor < target) {
-    const from = cursor + 1n;
-    const to = from + CHUNK - 1n < target ? from + CHUNK - 1n : target;
+  const scanRange = async (fromBlock: bigint, toBlock: bigint) => {
     for (let i = 0; i < addresses.length; i += 100) {
       // No `address` filter: we want *any* token sent to our addresses, so non-USDC arrivals are caught (R14).
-      const logs = await client.getLogs({ event: transferEvent, args: { to: addresses.slice(i, i + 100) }, fromBlock: from, toBlock: to });
+      const logs = await client.getLogs({ event: transferEvent, args: { to: addresses.slice(i, i + 100) }, fromBlock, toBlock });
       for (const log of logs) {
         const pr = byAddress.get((log.args.to as string).toLowerCase());
         if (pr && (await recordTransfer(pr, log))) found++;
       }
     }
+  };
+
+  // 1. Head first, so new payments are seen right away.
+  while (cursor < latest) {
+    const from = cursor + 1n;
+    const to = from + CHUNK - 1n < latest ? from + CHUNK - 1n : latest;
+    await scanRange(from, to);
     cursor = to;
     await setSetting(cursorKey, cursor.toString());
   }
+
+  // 2. Then a slice of any gap left by downtime.
+  const oldestAt = prs.length ? Math.min(...prs.map((p) => p.createdAt)) : null;
+  const oldestBlock = oldestAt === null ? null : latest - BigInt(Math.ceil((Date.now() - oldestAt) / 1000 / LIVE_CHAIN.blockTimeSec)) - CHUNK;
+  let gap = trimGap(planned.gap, oldestBlock);
+  for (let n = 0; gap && n < BACKFILL_CHUNKS_PER_TICK; n++) {
+    const to = gap.from + CHUNK - 1n < gap.to ? gap.from + CHUNK - 1n : gap.to;
+    await scanRange(gap.from, to);
+    gap = to >= gap.to ? null : { from: to + 1n, to: gap.to };
+  }
+  await setSetting(gapKey, gap ? JSON.stringify({ from: gap.from.toString(), to: gap.to.toString() }) : "");
+
   // Expiry must be judged against the last block we actually scanned, not the chain head.
   const latestTs = await blockTimestamp(cursor);
   // OP Stack `safe` head: highest L2 block already posted to Ethereum L1 (merchant-funds finality, PRD decision 2).
@@ -153,7 +189,7 @@ export async function scan() {
   }
   await setSetting(
     "worker:heartbeat",
-    JSON.stringify({ at: Date.now(), block: latest.toString(), safe: safe?.toString(), blockTs: latestTs, watching: addresses.length, behind: Number(latest - cursor) }),
+    JSON.stringify({ at: Date.now(), block: latest.toString(), safe: safe?.toString(), blockTs: latestTs, watching: addresses.length, backfilling: gap ? Number(gap.to - gap.from) : 0 }),
   );
   return { latest, latestTs, safe, found };
 }
@@ -228,16 +264,7 @@ export async function ingestTransfer(prArg: PR, t: IncomingTransfer) {
   }
 
   if (["awaiting_payment", "underpaid", "expired"].includes(pr.status)) {
-    const exchange = await db.query.addressLabels.findFirst({ where: eq(schema.addressLabels.address, t.fromAddress.toLowerCase()) });
-    await updatePr(pr.id, {
-      status: "confirming",
-      payerAddress: pr.payerAddress ?? t.fromAddress,
-      firstTxHash: pr.firstTxHash ?? t.txHash,
-      payerIsExchange: pr.payerIsExchange || (exchange?.kind === "exchange" ? 1 : 0),
-    });
-    if (exchange?.kind === "exchange") {
-      await logActivity(pr.orderId, pr.id, "payer.exchange", `Payer ${t.fromAddress} is a known exchange wallet (${exchange.label}, simulated label) — refunds will need a verified refund address`);
-    }
+    await updatePr(pr.id, { status: "confirming", payerAddress: pr.payerAddress ?? t.fromAddress, firstTxHash: pr.firstTxHash ?? t.txHash });
     await trackFunnel(pr.id, "payment_detected");
     if (pr.status !== "underpaid") {
       await enqueueWebhook("payment.confirming", { orderId: pr.orderId, paymentRequestId: pr.id, txHash: t.txHash, amount: t.amountOnchain });
