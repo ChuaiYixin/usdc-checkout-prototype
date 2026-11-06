@@ -5,12 +5,11 @@ import { db, schema } from "@/db/client";
 import { SCENARIOS } from "@/lib/simulator";
 import { formatUsdc } from "@/lib/money";
 import { PrStatusBadge } from "@/components/status";
-import { SimTag } from "@/components/ui";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
 import { getT } from "@/i18n/server";
 
-export default async function SimulatorPage() {
+export default async function ScenariosPage() {
   const t = await getT();
   const prs = await db.select().from(schema.paymentRequests).orderBy(desc(schema.paymentRequests.createdAt)).limit(12);
   const now = Date.now();
@@ -19,19 +18,21 @@ export default async function SimulatorPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            {t("Payment simulator")} <SimTag />
+            {t("Payment scenarios")}
           </h1>
           <p className="max-w-3xl text-sm text-slate-500">
-            {t("Injects a simulated transfer into the same pipeline the real Base Sepolia scanner feeds — confirmations still tick with real blocks. Use it to demo edge cases without spending faucet USDC. Simulated funds are refunded only in the database.")}
+            {t("Run a scenario against any open payment request and see how the platform responds, from the buyer's page to the exception queue.")}
           </p>
         </div>
+        <span data-guide="scen-new" className="inline-flex">
         <ActionButton
           url="/api/checkout"
-          body={{ quantity: 2, fullName: "Sim Buyer", email: "sim@example.com", country: "US", shippingAddress: "Test address" }}
+          body={{ quantity: 2, fullName: "Morgan Reyes", email: "morgan.reyes@example.com", country: "US", shippingAddress: "88 Harbor St, Seattle, WA 98101" }}
           className="btn-primary"
         >
-          {t("New demo order (120 USD)")}
+          {t("New order (120 USD)")}
         </ActionButton>
+        </span>
       </div>
 
       <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
@@ -46,12 +47,12 @@ export default async function SimulatorPage() {
       </div>
 
       <div className="space-y-3">
-        {prs.map((pr) => {
+        {prs.map((pr, i) => {
           const expired = now > pr.expiresAt;
           return (
-            <div key={pr.id} className="card p-4">
+            <div key={pr.id} className={`card p-4 ${i === 0 ? "animate-rise" : ""}`}>
               <div className="flex flex-wrap items-center gap-3">
-                <Link href={`/merchant/orders/${pr.orderId}`} className="mono font-semibold text-brand hover:underline">
+                <Link href={`/merchant/orders/${pr.orderId}`} data-guide={i === 0 ? "scen-order" : undefined} className="mono font-semibold text-brand hover:underline">
                   {pr.orderId}
                 </Link>
                 <PrStatusBadge status={pr.status} />
@@ -59,16 +60,17 @@ export default async function SimulatorPage() {
                 <span className="text-xs text-slate-500">
                   {t(expired ? "expired" : "expires")} <Time ms={pr.expiresAt} />
                 </span>
-                {pr.simulated ? <SimTag>Has simulated funds</SimTag> : null}
-                <Link href={`/pay/${pr.id}`} target="_blank" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
+                                <Link href={`/pay/${pr.id}`} target="_blank" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
                   {t("Buyer view")} <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {SCENARIOS.map((s) => (
-                  <ActionButton key={s.key} url="/api/ops/simulate" body={{ paymentRequestId: pr.id, scenario: s.key }}>
-                    {t(s.label)}
-                  </ActionButton>
+                  <span key={s.key} data-guide={i === 0 ? `scen-${s.key}` : undefined} className="inline-flex">
+                    <ActionButton url="/api/ops/simulate" body={{ paymentRequestId: pr.id, scenario: s.key }}>
+                      {t(s.label)}
+                    </ActionButton>
+                  </span>
                 ))}
                 {["awaiting_payment", "underpaid"].includes(pr.status) && (
                   <ActionButton url="/api/ops/simulate" body={{ paymentRequestId: pr.id, scenario: "expire_now" }}>

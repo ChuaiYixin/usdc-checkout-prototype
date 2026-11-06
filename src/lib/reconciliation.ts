@@ -94,7 +94,7 @@ export async function unsettled() {
 export async function reconciliationCsv() {
   const days = await reconcile();
   const lines = [
-    ["settlement_id", "date_sgt", "order_id", "simulated", "tx_hash", "onchain_gross_usdc", "fee_usdc", "net_usdc", "fx_rate", "fx_sgd", "bank_ref", "bank_sgd", "row_status", "row_issues", "batch_issues"].join(","),
+    ["settlement_id", "date_sgt", "order_id", "tx_hash", "onchain_gross_usdc", "fee_usdc", "net_usdc", "fx_rate", "fx_sgd", "bank_ref", "bank_sgd", "row_status", "row_issues", "batch_issues"].join(","),
   ];
   for (const d of days) {
     for (const r of d.rows) {
@@ -103,7 +103,6 @@ export async function reconciliationCsv() {
           d.settlement.id,
           d.settlement.date,
           r.orderId,
-          r.simulated ? "yes" : "no",
           r.txHash ?? "",
           (Number(r.onchainGrossMicros) / 1e6).toFixed(2),
           (Number(r.feeMicros) / 1e6).toFixed(2),

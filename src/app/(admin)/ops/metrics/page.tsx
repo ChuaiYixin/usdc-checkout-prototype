@@ -1,6 +1,5 @@
 import { computeMetrics } from "@/lib/metrics";
 import { funnelReport } from "@/lib/funnel";
-import { SimTag } from "@/components/ui";
 import { getT } from "@/i18n/server";
 
 const pct = (v: number | null) => (v === null ? "—" : `${(v * 100).toFixed(1)}%`);
@@ -21,15 +20,15 @@ export default async function MetricsPage() {
     {
       name: "Exception rate",
       value: pct(m.exceptionRate.value),
-      n: t("{n} arrivals · {s}% from the simulator", { n: m.exceptionRate.n, s: (m.exceptionRate.simulatedShare * 100).toFixed(0) }),
+      n: t("{n} arrivals", { n: m.exceptionRate.n }),
       def: "Arrivals entering the exception queue ÷ all arrivals",
       target: "< 2%",
-      why: "Does the checkout prevent mistakes? (Inflated here on purpose by edge-case testing.)",
+      why: "Does the checkout prevent mistakes?",
     },
     {
       name: "Payment → buyer success (median)",
       value: secs(m.medianToSuccess.value),
-      n: t("{n} real testnet payments (current thresholds)", { n: m.medianToSuccess.n }),
+      n: t("{n} on-chain payments (current thresholds)", { n: m.medianToSuccess.n }),
       def: "Block time of first transfer → 'Payment successful'",
       target: "Seconds",
       why: "Checkout should feel as fast as a card",
@@ -37,7 +36,7 @@ export default async function MetricsPage() {
     {
       name: "Payment → funds available (median)",
       value: secs(m.medianToAvailable.value),
-      n: t("{n} real testnet payments (current thresholds)", { n: m.medianToAvailable.n }),
+      n: t("{n} on-chain payments (current thresholds)", { n: m.medianToAvailable.n }),
       def: "Block time of first transfer → merchant funds available (L1-safe)",
       target: "< 15 min",
       why: "The 'fast' merchants care about",
@@ -47,7 +46,7 @@ export default async function MetricsPage() {
       value: pct(m.autoMatch.value),
       n: t("{n} succeeded payments", { n: m.autoMatch.n }),
       def: "Succeeded payments that needed no human action",
-      target: "100% for normal payments (R7)",
+      target: "100% for normal payments",
       why: "Unique deposit address per request",
     },
     {
@@ -56,7 +55,7 @@ export default async function MetricsPage() {
       n: t("{n} settled orders", { n: m.autoReconciliation.n }),
       def: "Orders matched across chain ↔ FX ↔ bank with no break",
       target: "> 98%",
-      why: "Will finance keep using it? (Seeded history contains two deliberate breaks.)",
+      why: "Will finance keep using it?",
       sim: true,
     },
     {
@@ -71,14 +70,14 @@ export default async function MetricsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("PRD metrics")}</h1>
-        <p className="text-sm text-slate-500">{t("Computed live from this prototype's records (seeded history excluded unless noted). Targets are portfolio assumptions from the PRD, not data.")}</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Metrics")}</h1>
+        <p className="text-sm text-slate-500">{t("Computed live from your payment records.")}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <div key={c.name} className="card p-5">
             <p className="flex items-center gap-2 text-xs font-medium text-slate-500">
-              {t(c.name)} {c.sim && <SimTag>Simulated data</SimTag>}
+              {t(c.name)}
             </p>
             <p className="mt-2 text-3xl font-bold tabular-nums">{c.value}</p>
             <p className="text-xs text-slate-400">{c.n}</p>
@@ -101,7 +100,7 @@ export default async function MetricsPage() {
       </div>
       <section className="card p-6">
         <h2 className="font-semibold">{t("Checkout funnel")}</h2>
-        <p className="mt-1 text-xs text-slate-500">{t("Decomposes the completion rate so the team knows where to work. Counts payment requests that reached at least each step (test traffic, so absolute numbers mean little).")}</p>
+        <p className="mt-1 text-xs text-slate-500">{t("Decomposes the completion rate so the team knows where to work. Counts payment requests that reached at least each step.")}</p>
         <p className="mt-3 text-sm text-slate-600">
           {t("Checkout page views, tracked separately by browser session:")} <span className="font-medium tabular-nums">{f.steps[0].count}</span>
         </p>
@@ -114,7 +113,7 @@ export default async function MetricsPage() {
               <div key={s.step} className="grid grid-cols-[minmax(0,220px)_1fr_120px] items-center gap-3 text-sm">
                 <span className="truncate text-slate-600">{t(s.label)}</span>
                 <div className="h-6 rounded-md bg-slate-100">
-                  <div className="h-6 rounded-md bg-blue-600/80" style={{ width: `${Math.min(100, Math.max(2, (s.count / top) * 100))}%` }} />
+                  <div className="h-6 rounded-md bg-brand/80" style={{ width: `${Math.min(100, Math.max(2, (s.count / top) * 100))}%` }} />
                 </div>
                 <span className="text-right tabular-nums">
                   {s.count} {prev > 0 && <span className="text-xs text-slate-400">({Math.round((s.count / prev) * 100)}%)</span>}

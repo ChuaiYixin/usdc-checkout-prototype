@@ -4,7 +4,7 @@ import { db, schema } from "@/db/client";
 import { ACTIONS_BY_TYPE } from "@/lib/exceptions";
 import { computeMetrics } from "@/lib/metrics";
 import { formatUsdc, shortHex } from "@/lib/money";
-import { Badge, SimTag } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { DEFAULT_ACTIONS, exceptionLabel } from "@/components/status";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
@@ -42,19 +42,19 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("Exception queue")}</h1>
-          <p className="text-sm text-slate-500">{t("On-chain transfers can't be reversed, so every exception type has a pre-agreed default (R14).")}</p>
+          <p className="text-sm text-slate-500">{t("On-chain transfers can't be reversed, so every exception type has a pre-agreed default.")}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500">{t("Exception rate (queued arrivals ÷ all arrivals, seeded history excluded)")}</p>
+          <p className="text-xs text-slate-500">{t("Exception rate (queued arrivals ÷ all arrivals)")}</p>
           <p className="text-lg font-bold">
-            {rate.toFixed(1)}% <span className="text-xs font-normal text-slate-400">{t("target < 2% · inflated by simulator tests")}</span>
+            {rate.toFixed(1)}% <span className="text-xs font-normal text-slate-400">{t("target < 2%")}</span>
           </p>
         </div>
       </div>
 
       <div className="inline-flex rounded-xl bg-slate-100 p-1 text-sm">
         {["open", "resolved"].map((v) => (
-          <Link key={v} href={`/ops/exceptions?view=${v}`} className={`rounded-lg px-4 py-1.5 font-medium capitalize ${view === v ? "bg-white shadow-sm" : "text-slate-500"}`}>
+          <Link key={v} href={`/ops/exceptions?view=${v}`} className={`rounded-lg px-4 py-1.5 font-medium capitalize ${view === v ? "bg-brand text-on-brand" : "text-slate-500 hover:text-ink"}`}>
             {t(v)}
           </Link>
         ))}
@@ -81,7 +81,7 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
                       {ex.orderId}
                     </Link>
                     <span className="text-sm font-semibold">{amount}</span>
-                    {pr.simulated ? <SimTag /> : null}
+                    
                   </p>
                   <p className="text-xs text-slate-500">
                     {t("Opened")} <Time ms={ex.createdAt} />
@@ -109,7 +109,7 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
                   </ActionButton>
                 )}
                 {ex.status === "open" && exRefunds.length === 0 && (
-                  <div className="flex flex-wrap gap-2">
+                  <div data-guide={`exception-${ex.orderId}`} className="flex flex-wrap gap-2">
                     {(ACTIONS_BY_TYPE[ex.type] ?? []).map((a) => (
                       <ActionButton
                         key={a.action}
@@ -128,7 +128,7 @@ export default async function ExceptionsPage({ searchParams }: { searchParams: P
             </div>
           );
         })}
-        {rows.length === 0 && <p className="card p-8 text-center text-sm text-slate-500">{t("Nothing here. Use the Simulator to create edge cases.")}</p>}
+        {rows.length === 0 && <p className="card p-8 text-center text-sm text-slate-500">{t("Nothing here. All clear.")}</p>}
       </div>
     </div>
   );

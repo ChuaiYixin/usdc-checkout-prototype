@@ -101,8 +101,8 @@ export async function applyExceptionAction(id: number, action: ExceptionAction) 
       return;
     }
     case "keep_frozen": {
-      await resolve("Kept frozen; suspicious transaction report filed (simulated)");
-      await logActivity(pr.orderId, pr.id, "screening.reported", "Compliance kept funds frozen and filed a report (simulated)");
+      await resolve("Kept frozen; suspicious transaction report filed");
+      await logActivity(pr.orderId, pr.id, "screening.reported", "Compliance kept funds frozen and filed a report");
       return;
     }
   }

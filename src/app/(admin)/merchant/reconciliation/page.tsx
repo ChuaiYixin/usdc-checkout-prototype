@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Download } from "lucide-react";
 import { reconcile, unsettled } from "@/lib/reconciliation";
 import { CHAINS, txUrl } from "@/config/chains";
 import { formatSgd, formatUsdc, shortHex } from "@/lib/money";
-import { ExplorerLink, SimTag } from "@/components/ui";
+import { ExplorerLink } from "@/components/ui";
 import { FundsBadge } from "@/components/status";
 import { getT } from "@/i18n/server";
 
@@ -17,16 +17,11 @@ export default async function ReconciliationPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("Reconciliation")}</h1>
-          <p className="text-sm text-slate-500">{t("Daily three-way match: on-chain receipts ↔ FX conversion ↔ bank credit (R12). Breaks are flagged in red.")}</p>
+          <p className="text-sm text-slate-500">{t("Daily three-way match: on-chain receipts ↔ FX conversion ↔ bank credit. Breaks are flagged in red.")}</p>
         </div>
         <a href="/api/merchant/reconciliation/csv" className="btn-secondary">
           <Download className="h-4 w-4" /> {t("Export CSV")}
         </a>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        <SimTag />
-        {t("On-chain receipts for real testnet orders are live. FX conversion and bank credits are simulated; the three seeded days include two deliberate breaks to show how mismatches surface.")}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -44,17 +39,18 @@ export default async function ReconciliationPage() {
         </div>
       </div>
 
-      {days.map((d) => {
+      {days.map((d, i) => {
         const bad = d.issues.length > 0 || d.rows.some((r) => r.issues.length);
+        const firstBad = bad && days.findIndex((x) => x.issues.length > 0 || x.rows.some((r) => r.issues.length)) === i;
         return (
-          <section key={d.settlement.id} className={`card overflow-hidden ${bad ? "ring-2 ring-rose-200" : ""}`}>
+          <section key={d.settlement.id} data-guide={firstBad ? "recon-break" : i === 0 ? "recon-first" : undefined} className={`card overflow-hidden ${bad ? "ring-2 ring-rose-200" : ""}`}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
               <div className="flex items-center gap-3">
                 {bad ? <AlertTriangle className="h-5 w-5 text-rose-600" /> : <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
                 <h2 className="font-semibold">{d.settlement.date}</h2>
                 <span className="mono text-xs text-slate-500">{d.settlement.id}</span>
               </div>
-              <span className="text-xs text-slate-500">{t("Rate {rate} (simulated) · bank ref {ref}", { rate: d.settlement.fxRate.toFixed(4), ref: d.settlement.bankRef ?? "—" })}</span>
+              <span className="text-xs text-slate-500">{t("Rate {rate} · bank ref {ref}", { rate: d.settlement.fxRate.toFixed(4), ref: d.settlement.bankRef ?? "—" })}</span>
             </div>
             {d.issues.length > 0 && (
               <ul className="space-y-1 bg-rose-50 px-5 py-3 text-sm text-rose-700">
@@ -86,7 +82,7 @@ export default async function ReconciliationPage() {
                           <Link href={`/merchant/orders/${r.orderId}`} className="mono font-semibold text-brand hover:underline">
                             {r.orderId}
                           </Link>
-                          {r.simulated && <span className="ml-1.5"><SimTag /></span>}
+                          
                         </td>
                         <td className="td border-l border-line">
                           <span className="tabular-nums">{formatUsdc(r.onchainGrossMicros)} USDC</span>

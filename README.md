@@ -1,10 +1,10 @@
-# USDC Checkout Prototype — cross-border stablecoin payments for a Singapore merchant
+# Quayline — USDC checkout prototype for a Singapore merchant
 
 **A buyer in the US pays a Singapore store 120 USD in USDC on Base Sepolia. The payment is matched to the order automatically, pushed to the merchant by webhook, settled to SGD daily, and reconciled three ways. Refunds and every exception path are built in.**
 
 > ⚠️ **This prototype connects to testnets only and does not process real funds.** The merchant ("Atelier Kelong") and the payment service provider are fictional. FX conversion and bank credits are simulated and labelled as such in the UI.
 
-Part of a product-management portfolio. The product requirements are in [`docs/PRD.md`](docs/PRD.md) (Chinese), with requirement IDs traced in the [table below](#requirement-traceability). The interface switches between English and 中文 from the control in the bottom-right corner. New here? Open the homepage and follow the [main flow](#main-flow).
+Part of a product-management portfolio. The product requirements are in [`docs/PRD.md`](docs/PRD.md) (Chinese), with requirement IDs traced in the [table below](#requirement-traceability). The interface switches between English and 中文 from the control in the bottom-right corner. The app is written as a finished product, called Quayline, so its screens carry no testnet labels. This README is the place that says what is real and what is simulated. New here? Open the dashboard and follow the [guided tour](#guided-tour).
 
 ---
 
@@ -36,21 +36,23 @@ Exception paths, also on the real testnet:
 | --- | --- | --- |
 | ![Exceptions](docs/screenshots/07-exceptions.png) | ![Reconciliation](docs/screenshots/08-reconciliation.png) | ![Mobile](docs/screenshots/09-mobile-pay.jpg) |
 
-| PRD metrics + checkout funnel | Main flow on the homepage |
-| --- | --- |
-| ![Metrics](docs/screenshots/10-metrics.png) | ![Main flow](docs/screenshots/11-main-flow.png) |
+| Metrics + checkout funnel | Guided tour: spotlight and flow progress | First-run welcome |
+| --- | --- | --- |
+| ![Metrics](docs/screenshots/10-metrics.png) | ![Guide](docs/screenshots/12-guide-spotlight.png) | ![Welcome](docs/screenshots/11-welcome.png) |
 
-## Main flow
+![Landing page](docs/screenshots/00-landing.png)
 
-The homepage takes you through the product in three parts. A card follows you from page to page with the current step, and most steps move on by themselves once the app's records show them happening. Everything is in both English and Chinese.
+## Guided tour
 
-| Part | What you do | What it shows |
+The homepage is the product's landing page; the dashboard is at `/merchant`. The first time someone opens the dashboard, a tour starts: a dark mask with a hole cut around the one thing to click, a card explaining it, and a progress rail for the current flow. Most steps move on by themselves once the app's records show them happening. It can be skipped, and reopened from **Guide** at the bottom of any dashboard page. Everything is in both English and Chinese.
+
+| Flow | What you do | What it shows |
 | --- | --- | --- |
 | 1. Take a payment | Check out, pay with test USDC, open the order | The whole chain to the merchant, and why buyer and merchant get different answers at different times |
 | 2. Handle a payment that goes wrong | Underpay and top up; pay from a flagged wallet | Rules for irreversible mistakes, and what each role gets to see |
 | 3. Refund, settle and reconcile | Refund, run the SGD settlement, read reconciliation | Why refunds only go to the original address, and what the merchant needs after the USDC arrives |
 
-Part 1 pays and part 3 refunds about 1.20 test USDC on the real testnet. Part 2 and the FX and bank legs use the simulator.
+Flow 1 pays and flow 3 refunds about 1.20 test USDC on the real testnet. Flow 2 uses Scenarios, which injects simulated transfers. The FX and bank legs in flow 3 are simulated.
 
 ## What's real and what's simulated
 
@@ -60,11 +62,13 @@ Part 1 pays and part 3 refunds about 1.20 test USDC on the real testnet. Part 2 
 | Buyer pays USDC from a browser wallet or an EIP-681 QR code | **Real** Base Sepolia transfer |
 | Chain watcher: detection, confirmations, reorg check, matching | **Real** (polls `eth_getLogs` on Base Sepolia) |
 | Refunds to the original address | **Real** testnet transfer (EIP-3009, gas paid by the platform) |
-| Webhooks with HMAC signatures and retries | **Real** HTTP, sent to a bundled mock merchant server |
+| Webhooks with HMAC signatures and retries | **Real** HTTP, sent to a bundled merchant endpoint (`/api/webhook-receiver/webhook`) |
 | Address screening, region gating, travel-rule tiers | Wired into the flow, but uses **local demo lists** |
 | USDC → SGD conversion and bank payout | **Simulated** |
 | Order history on the reconciliation page | **Simulated** seed data |
-| Payment simulator (under/over/late/non-USDC/screening hit) | **Simulated** transfers fed through the real pipeline |
+| Scenarios page, `/ops/scenarios` (under/over/late/non-USDC/screening hit) | **Simulated** transfers fed through the real pipeline |
+| Landing page figures (~3 s, under 5 min) | **Measured on testnet** (medians in `docs/PRD-additions.md`, plus runs on 2026-11-06 that took 2–5 min); pricing is **illustrative** |
+| The company and its pricing | **Fictional.** The landing page claims no licence, customers or volumes |
 
 ## Architecture
 
@@ -78,8 +82,8 @@ flowchart LR
     P["/pay/:id payment page"]
     API[API routes]
     M["/merchant dashboard"]
-    O["/ops exception queue · compliance · metrics · simulator"]
-    MM["/api/mock-merchant/webhook<br/>(stand-in merchant server)"]
+    O["/ops exception queue · compliance · metrics · scenarios"]
+    MM["/api/webhook-receiver/webhook<br/>(stand-in merchant server)"]
   end
   subgraph Worker
     SC[Scanner<br/>getLogs Transfer to our addresses]
@@ -183,7 +187,7 @@ USDC on Base Sepolia: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`, verified aga
 5. **Webhooks:** `/merchant/webhooks` lists the `payment.confirming → succeeded → funds_available` events. Click **Simulate endpoint outage**, place another order and watch the retries.
 6. **Refund:** on the order page, click **Refund in full**. The destination is re-screened, then the deposit address signs an EIP-3009 authorisation and the gas sponsor submits it. A real refund transaction appears on Basescan.
 7. **Settlement and reconciliation:** on `/merchant/settlement`, click **Run today's settlement** (simulated). Then on `/merchant/reconciliation`, see your order matched across all three columns. The seeded days show the two deliberate breaks in red. Export the CSV.
-8. **Edge cases:** use `/ops/simulator` to underpay, overpay, send USDT, pay from a screened address or pay late. Then handle each case in `/ops/exceptions`.
+8. **Edge cases:** use `/ops/scenarios` to underpay, overpay, send USDT, pay from a screened address or pay late. Then handle each case in `/ops/exceptions`.
 9. **Gasless:** on the payment page, **"Pay … — no gas needed"** asks the wallet for one signature, and the platform submits and pays gas.
 10. **Metrics:** `/ops/metrics` computes the PRD's metrics live from the prototype's own records: completion rate, exception rate, median time to buyer success and to merchant funds available, auto-match rate and auto-reconciliation rate, plus the checkout funnel.
 
@@ -237,7 +241,7 @@ PRD decisions that show up in the code:
 
 - `tests/engine.test.ts` covers the PRD rules: one active request per order (R1), unique addresses (R7), region gating (R16), travel-rule tiers, exact/under/over/late/non-USDC/screened payments, duplicate log de-duplication, the expiry race, and L1-safe finality.
 - `tests/regressions.test.ts` pins the bugs found by an independent review pass. Examples: a late transfer taking over an in-progress payment, non-idempotent "refund in full", retrying non-failed refunds, money arriving on a refunded order, flagged extra payments, and settlement of funds that are mid-refund.
-- `tests/features.test.ts` covers gasless checkout rules, the funnel and the main flow's automatic checks.
+- `tests/features.test.ts` covers gasless checkout rules, the funnel and the guided tour's automatic checks.
 - `tests/i18n.test.ts` checks that every string sent through the translator has a Chinese entry, and that translations keep their placeholders.
 
 Beyond the offline tests, the real-testnet runs listed under [Verified on Base Sepolia](#verified-on-base-sepolia) exercise the same paths end to end.
@@ -263,12 +267,12 @@ src/
     store/            buyer checkout
     pay/[id]/         payment page (wagmi)
     (admin)/merchant/ overview, orders, webhooks, settlement, reconciliation
-    (admin)/ops/      exception queue, compliance, metrics, simulator
+    (admin)/ops/      exception queue, compliance, metrics, scenarios
     api/              route handlers (+ mock merchant webhook receiver)
   config/             chains, thresholds, product, compliance defaults
   db/                 Drizzle schema, client, migrations runner
   i18n/               language switch and Chinese translations
-  guide/              the homepage's three-part main flow: steps, automatic checks, step card
+  guide/              the three-flow guided tour: steps, automatic checks, spotlight overlay, progress rail
   lib/                engine (scanner + state machine), refunds, webhooks, compliance,
                       settlement, reconciliation, simulator, seed data
 worker/index.ts       chain worker loop

@@ -9,7 +9,7 @@ export default async function OrdersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t("Orders")}</h1>
-        <p className="text-sm text-slate-500">{t("Every payment request has its own deposit address, so each on-chain transfer maps to exactly one order (R7).")}</p>
+        <p className="text-sm text-slate-500">{t("Every payment request has its own deposit address, so each on-chain transfer maps to exactly one order.")}</p>
       </div>
       <section className="card overflow-hidden">
         <OrdersTable rows={rows} />

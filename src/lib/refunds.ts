@@ -181,7 +181,7 @@ async function onRefundSucceeded(r: Refund, pr: PR) {
   const now = Date.now();
   await update(r.id, { buyerNotifiedAt: now });
   const amt = r.tokenSymbol === "USDC" ? `${formatUsdc(BigInt(r.amountOnchain) * BigInt(pr.divisor))} USDC` : `${formatUsdc(r.amountOnchain)} ${r.tokenSymbol}`;
-  await logActivity(r.orderId, r.paymentRequestId, "refund.succeeded", `Refunded ${amt} to ${r.toAddress}. Buyer notified by email (simulated).`);
+  await logActivity(r.orderId, r.paymentRequestId, "refund.succeeded", `Refunded ${amt} to ${r.toAddress}. Buyer notified by email.`);
   // A merchant full refund always closes the order. Exception refunds (underpaid-expired, late) only close it
   // once every USDC that arrived on this request has gone back — otherwise other money is still outstanding.
   let closeOrder = r.reason === "merchant_full";

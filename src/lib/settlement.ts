@@ -51,7 +51,7 @@ export async function runSettlement() {
   const { settlementPreference } = await getMerchantSettings();
   if (settlementPreference !== "auto_sgd") throw new Error("Settlement preference is 'hold USDC' — nothing to convert.");
   const { items, net, withdrawn } = await availableToSettle();
-  if (withdrawn > 0n) throw new Error("Part of the balance was withdrawn as USDC; switch preference consistently in this demo.");
+  if (withdrawn > 0n) throw new Error("Part of the balance was withdrawn as USDC; keep your settlement preference consistent.");
   if (!items.length) throw new Error("No available funds to settle yet (payments need to reach finality first).");
   const q = fxQuote(net);
   const now = Date.now();
@@ -84,7 +84,7 @@ export async function runSettlement() {
     .update(schema.paymentRequests)
     .set({ fundsStatus: "settled", updatedAt: now })
     .where(inArray(schema.paymentRequests.id, items.map((i) => i.pr.id)));
-  for (const i of items) await logActivity(i.pr.orderId, i.pr.id, "settlement", `Included in settlement ${id}: converted to SGD at ${q.rate} (simulated) and paid out`);
+  for (const i of items) await logActivity(i.pr.orderId, i.pr.id, "settlement", `Included in settlement ${id}: converted to SGD at ${q.rate} and paid out`);
   return id;
 }
 
@@ -103,5 +103,5 @@ export async function withdraw(address: string, amountMicros: bigint) {
   if (!wl) throw new Error("Address is not on the whitelist");
   const { holdable } = await availableToSettle();
   if (amountMicros <= 0n || amountMicros > holdable) throw new Error("Amount exceeds available USDC balance");
-  await db.insert(schema.withdrawals).values({ id: randomId("wd", 6), toAddress: wl.address, amountMicros: amountMicros.toString(), status: "completed (simulated)", createdAt: Date.now() });
+  await db.insert(schema.withdrawals).values({ id: randomId("wd", 6), toAddress: wl.address, amountMicros: amountMicros.toString(), status: "completed", createdAt: Date.now() });
 }

@@ -60,7 +60,7 @@ Running the prototype surfaced two gaps. Each is now a numbered requirement (R18
 - **Gasless checkout (R18).** The card-vs-stablecoin comparison lists "no token for gas" as a top failure reason. With USDC's EIP-3009, the buyer *signs* an authorisation for exactly the amount due, and the platform submits it and pays the gas. The platform only sponsors exact-amount, exact-address authorisations (rate-limited), so gas sponsorship can't be abused. Verified on testnet from a brand-new wallet holding exactly 0 ETH: it signed, the order succeeded, and it still held 0 ETH afterwards.
 - **Checkout funnel (R19).** Completion rate alone isn't actionable. The funnel splits it into view → request → connect → sign → detected → success and records *why* buyers drop (rejected in wallet, no gas, insufficient USDC, wrong network).
 
-The prototype's homepage walks through these decisions in a three-part [main flow](../README.md#main-flow), with steps that complete themselves as the app sees them happen.
+The dashboard walks through these decisions in a three-flow [guided tour](../README.md#guided-tour), with steps that complete themselves as the app sees them happen.
 
 ## 5. Key trade-offs
 

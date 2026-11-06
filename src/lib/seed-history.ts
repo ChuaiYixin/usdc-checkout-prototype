@@ -54,7 +54,7 @@ export async function seedHistory() {
         customerName: name,
         customerEmail: `${name.split(" ")[0].toLowerCase()}@example.com`,
         country,
-        shippingAddress: "Simulated address",
+        shippingAddress: "22 Orchard Rd, Portland, OR 97201",
         itemsJson: JSON.stringify([{ productId: product.id, name: product.name, quantity: qty, unitCents: product.priceCents }]),
         subtotalCents: product.priceCents * qty,
         shippingCents: SHIPPING_CENTS,
@@ -114,7 +114,7 @@ export async function seedHistory() {
     const netIn = items.filter((i) => i.fx).reduce((s, i) => s + i.net, 0n);
     const q = fxQuote(netIn);
     const cutoff = base + 3 * 3600 * 1000;
-    const id = `stl_${sgtDate(cutoff).replaceAll("-", "")}_sim`;
+    const id = `stl_${sgtDate(cutoff).replaceAll("-", "")}_001`;
     await db.insert(schema.settlements).values({
       id,
       date: sgtDate(cutoff),

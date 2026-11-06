@@ -33,8 +33,8 @@ export function WhitelistForm({ demoCode }: { demoCode: string }) {
       ) : (
         <>
           <p className="text-xs text-slate-600">
-            {t("New whitelist addresses need a second verification (R11). We sent a code to the account owner's authenticator.")}
-            <span className="ml-1 sim-tag">{t("Demo code: {code}", { code: demoCode })}</span>
+            {t("New whitelist addresses need a second verification. We sent a code to the account owner's authenticator.")}
+            <span className="ml-1 font-semibold text-brand">{t("Your code: {code}", { code: demoCode })}</span>
           </p>
           <input className="input mono" placeholder={t("6-digit code")} value={code} onChange={(e) => setCode(e.target.value)} />
           <div className="flex gap-2">

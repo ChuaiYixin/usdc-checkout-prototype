@@ -23,10 +23,10 @@ function databaseUrl() {
 
 export function getClient(): Client {
   if (!g.__dbClient) {
-    g.__dbClient = createClient({ url: databaseUrl() });
+    // `timeout` rather than a PRAGMA: the client can open new connections, and a PRAGMA only reaches the current one.
+    g.__dbClient = createClient({ url: databaseUrl(), timeout: 8000 });
     g.__dbReady = (async () => {
       await g.__dbClient!.execute("PRAGMA journal_mode = WAL");
-      await g.__dbClient!.execute("PRAGMA busy_timeout = 8000");
     })();
   }
   return g.__dbClient;

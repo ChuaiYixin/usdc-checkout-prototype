@@ -21,7 +21,7 @@ const STATUS_TUPLE = /:\s*\["((?:[^"\\]|\\.)+)",\s*"(?:gray|blue|green|amber|red
 const ERRORS = /(?:new (?:Error|CheckoutError|RefundError)\(|error:\s*)"((?:[^"\\]|\\.)+)"/g;
 const CALLS = /\bt\(\s*"((?:[^"\\]|\\.)+)"/g;
 const TERNARY = /\bt\(\s*[^"()]+\?\s*"((?:[^"\\]|\\.)+)"\s*:\s*(?:"((?:[^"\\]|\\.)+)"\s*:\s*"((?:[^"\\]|\\.)+)"|"((?:[^"\\]|\\.)+)")/g;
-const NOT_UI = new Set(["Base Sepolia", "Ethereum Sepolia", "Solana Devnet", "Base", "Ethereum", "Solana", "Atelier Kelong", "USDC Checkout Prototype", "Default", "Sim Buyer", "Test address", "—", "bad event", "bad signature", "service unavailable (simulated outage)", "since is required", "Not found", "Bad address", "Unknown action", "Test wallet disabled", "USDC", "useGuide must be used inside GuideProvider", "PLATFORM_MNEMONIC is missing — run `npm run setup` to generate a local testnet seed."]);
+const NOT_UI = new Set(["Base Sepolia", "Ethereum Sepolia", "Solana Devnet", "Base", "Ethereum", "Solana", "Atelier Kelong", "USDC Checkout Prototype", "Default",  "—", "bad event", "bad signature", "service unavailable (simulated outage)", "since is required", "Not found", "Bad address", "Unknown action", "Test wallet disabled", "USDC", "useGuide must be used inside GuideProvider", "PLATFORM_MNEMONIC is missing — run `npm run setup` to generate a local testnet seed."]);
 
 function keysFrom(f: string) {
   const text = fs.readFileSync(f, "utf8");
@@ -57,7 +57,7 @@ test("translate(): English passes through, Chinese applies variables, and runtim
 });
 
 test("every part of the main flow has both languages throughout", () => {
-  const texts = PARTS.flatMap((p) => [p.title, p.summary, p.badge, ...p.steps.flatMap((s) => [s.text, ...(s.why ? [s.why] : []), ...(s.link ? [s.link.label] : [])])]);
+  const texts = PARTS.flatMap((p) => [p.title, p.summary, ...p.stages, ...p.steps.flatMap((s) => [s.title, s.text, ...(s.why ? [s.why] : []), ...(s.route ? [s.route.label] : [])])]);
   for (const t of texts) {
     assert.ok(t.en.trim(), "missing English");
     assert.ok(/[一-龥]/.test(t.zh), `missing Chinese for: ${t.en}`);

@@ -53,7 +53,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     estTimeLabel: "~5 seconds",
     blockTimeSec: 0.2,
     confirmations: { largeAmountUsd: 1000, successSmall: 10, successLarge: 50, finality: 300, finalityTag: "safe" },
-    finalityLabel: "posted to Ethereum L1 (safe head, ~1–2 min)",
+    finalityLabel: "posted to Ethereum L1 (safe head, a few minutes)",
   },
   "ethereum-sepolia": {
     key: "ethereum-sepolia",
@@ -68,7 +68,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     blockTimeSec: 12,
     confirmations: { largeAmountUsd: 1000, successSmall: 3, successLarge: 12, finality: 64, finalityTag: "finalized" },
     finalityLabel: "finalized (~13 min)",
-    note: "Shown for completeness — not wired up in this prototype",
+    note: "Coming soon",
   },
   "solana-devnet": {
     key: "solana-devnet",
@@ -80,7 +80,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     blockTimeSec: 0.4,
     confirmations: { largeAmountUsd: 1000, successSmall: 1, successLarge: 1, finality: 32 },
     finalityLabel: "32 slots",
-    note: "Different address format — not wired up in this prototype",
+    note: "Coming soon",
   },
 };
 

@@ -21,6 +21,7 @@ export async function runChecks(since: number) {
   return {
     checks: {
       order_created: newOrders.length > 0,
+      second_order: newOrders.length > 1,
       wallet_connected: newFunnel.some((f) => f.step === "wallet_connected" || f.step === "qr_shown"),
       payment_detected: newTransfers.some((t) => t.kind === "usdc" && requestIds.has(t.paymentRequestId)),
       payment_succeeded: newRequests.some((r) => r.succeededAt),

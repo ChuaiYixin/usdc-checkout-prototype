@@ -1,41 +1,197 @@
 @import "tailwindcss";
 
+/* Dark, high-contrast theme. The neutral and status scales below are remapped rather than used as Tailwind ships them:
+   low numbers are dark surfaces and high numbers are bright text, so bg-slate-50 is a raised dark panel and
+   text-slate-600 is readable light text on any page. */
 @theme {
-  --font-sans: "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
-  --color-brand: #2563eb;
-  --color-brand-dark: #1d4ed8;
+  --font-sans: var(--font-geist), "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), "Cascadia Code", Consolas, ui-monospace, monospace;
+
+  --color-canvas: #050608;
+  --color-surface: #0e1015;
+  --color-ink: #f8f9fb;
+  --color-muted: #a3a9b6;
+  --color-line: #2a2e38;
+  --color-brand: #c6ff4a;
+  --color-brand-dark: #dcff8a;
+  --color-on-brand: #0b0f02;
+
+  --color-slate-50: #15181f;
+  --color-slate-100: #1c1f28;
+  --color-slate-200: #2a2e38;
+  --color-slate-300: #454a58;
+  --color-slate-400: #8a909e;
+  --color-slate-500: #a9afbb;
+  --color-slate-600: #c8ccd5;
+  --color-slate-700: #e0e3e9;
+  --color-slate-800: #eff1f4;
+  --color-slate-900: #fbfcfd;
+
+  --color-stone-50: #15181f;
+  --color-stone-100: #1c1f28;
+  --color-stone-200: #2a2e38;
+  --color-stone-300: #454a58;
+  --color-stone-400: #8a909e;
+  --color-stone-500: #a9afbb;
+  --color-stone-600: #c8ccd5;
+  --color-stone-700: #e0e3e9;
+  --color-stone-800: #eff1f4;
+  --color-stone-900: #fbfcfd;
+
+  --color-amber-50: #2a1f08;
+  --color-amber-100: #3a2b0c;
+  --color-amber-200: #6b5114;
+  --color-amber-300: #8a691a;
+  --color-amber-400: #c79a25;
+  --color-amber-500: #fbbf3c;
+  --color-amber-700: #fcd573;
+  --color-amber-800: #fde08f;
+  --color-amber-900: #feebb8;
+
+  --color-emerald-50: #06291d;
+  --color-emerald-100: #0a3a2a;
+  --color-emerald-200: #125c42;
+  --color-emerald-400: #34e3a1;
+  --color-emerald-500: #2fdc9b;
+  --color-emerald-600: #4fe8ae;
+  --color-emerald-700: #7ff0c4;
+  --color-emerald-800: #b0f7dc;
+
+  --color-rose-50: #2e0c16;
+  --color-rose-100: #40111f;
+  --color-rose-200: #7a1f38;
+  --color-rose-500: #ff5c7f;
+  --color-rose-600: #ff7492;
+  --color-rose-700: #ffa3b6;
+
+  --color-blue-50: #0b1b38;
+  --color-blue-200: #1f4080;
+  --color-blue-700: #9cc4ff;
+  --color-blue-900: #c9deff;
+
+  --color-violet-50: #1e1340;
+  --color-violet-200: #46309a;
+  --color-violet-700: #cdbfff;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-page: page-in 0.45s var(--ease-out-soft) backwards;
+  --animate-pop: pop-in 0.5s var(--ease-out-soft) backwards;
+  --animate-rise: rise-in 0.5s var(--ease-out-soft) backwards;
+  --animate-pulse-dot: pulse-dot 1.8s ease-out infinite;
+  --animate-grow: grow-up 0.8s var(--ease-out-soft) backwards;
+  --animate-sheen: sheen 2.4s linear infinite;
+  --animate-beam: beam 3.2s linear infinite;
 }
 
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes beam {
+  from {
+    left: -30%;
+  }
+  to {
+    left: 110%;
+  }
+}
+@keyframes spotlight-ping {
+  0% {
+    opacity: 0.9;
+    inset: 0;
+  }
+  80%,
+  100% {
+    opacity: 0;
+    inset: -9px;
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes journey-in {
+  0%,
+  6% {
+    opacity: 0.35;
+  }
+  14%,
+  100% {
+    opacity: 1;
+  }
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
 html,
 body {
-  background: #f8fafc;
+  background: var(--color-canvas);
   color: var(--color-ink);
+}
+::selection {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
 }
 
 @utility card {
-  @apply rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)];
+  @apply rounded-2xl border border-line bg-surface shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-[border-color,box-shadow,transform] duration-300;
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white hover:bg-brand-dark;
+  @apply btn bg-brand text-on-brand shadow-[0_0_0_0_rgba(198,255,74,0)] hover:bg-brand-dark hover:shadow-[0_0_28px_rgba(198,255,74,0.35)];
 }
 @utility btn-secondary {
-  @apply btn border border-line bg-white text-ink hover:bg-slate-50;
+  @apply btn border border-slate-300 bg-transparent text-ink hover:border-slate-400 hover:bg-slate-100;
 }
 @utility btn-danger {
-  @apply btn bg-rose-600 text-white hover:bg-rose-700;
+  @apply btn bg-[#ff3d6b] text-white hover:bg-[#ff5c82] hover:shadow-[0_0_28px_rgba(255,61,107,0.35)];
 }
 @utility btn-sm {
   @apply rounded-lg px-3 py-1.5 text-xs;
 }
 @utility input {
-  @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-blue-100;
+  @apply w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/20;
 }
 @utility label {
   @apply mb-1.5 block text-xs font-medium text-slate-600;
@@ -49,6 +205,81 @@ body {
 @utility td {
   @apply px-4 py-3 align-middle text-sm;
 }
-@utility sim-tag {
-  @apply inline-flex items-center rounded-md border border-dashed border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700;
+
+/* Rows and links react so the tables feel alive. */
+tbody tr {
+  transition: background-color 0.2s;
+}
+tbody tr:hover {
+  background: var(--color-slate-50);
+}
+
+/* Spotlight ring around the element the guide points at. */
+.spotlight-hole {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  border-radius: 14px;
+  transition:
+    top 0.5s var(--ease-out-soft),
+    left 0.5s var(--ease-out-soft),
+    width 0.5s var(--ease-out-soft),
+    height 0.5s var(--ease-out-soft),
+    box-shadow 0.35s;
+}
+.spotlight-hole::before,
+.spotlight-hole::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--color-brand);
+}
+.spotlight-hole::before {
+  box-shadow:
+    0 0 24px rgba(198, 255, 74, 0.55),
+    inset 0 0 12px rgba(198, 255, 74, 0.15);
+}
+.spotlight-hole::after {
+  animation: spotlight-ping 1.8s ease-out infinite;
+}
+
+.check-draw {
+  stroke-dasharray: 1;
+  animation: draw 0.6s var(--ease-out-soft) 0.15s backwards;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 30%, transparent 75%);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.8s var(--ease-out-soft),
+    transform 0.8s var(--ease-out-soft);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

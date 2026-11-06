@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       if (!isAddress(b.address)) return NextResponse.json({ error: "Not a valid EVM address" }, { status: 400 });
       await db
         .insert(schema.riskAddresses)
-        .values({ address: b.address.toLowerCase(), label: b.label || "Added by compliance (simulated)", addedAt: now })
+        .values({ address: b.address.toLowerCase(), label: b.label || "Added by compliance", addedAt: now })
         .onConflictDoNothing();
       return NextResponse.json({ ok: true });
     case "remove_risk":

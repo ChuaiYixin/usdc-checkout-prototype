@@ -59,7 +59,7 @@ export async function simulateTransfer(paymentRequestId: string, scenario: Scena
       from = DEMO_RISK_ADDRESSES[0].address;
       break;
     case "late":
-      if (Date.now() <= pr.expiresAt) throw new Error("This request hasn't expired yet — wait for the timer, then simulate a late payment");
+      if (Date.now() <= pr.expiresAt) throw new Error("This request hasn't expired yet — expire it first, then send the late payment");
       break;
   }
 

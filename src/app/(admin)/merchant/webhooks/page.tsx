@@ -22,7 +22,7 @@ export default async function WebhooksPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t("Webhooks")}</h1>
-        <p className="text-sm text-slate-500">{t("Every status change is pushed to your server, signed, and retried until it's acknowledged (R9).")}</p>
+        <p className="text-sm text-slate-500">{t("Every status change is pushed to your server, signed, and retried until it's acknowledged.")}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -30,17 +30,17 @@ export default async function WebhooksPage() {
           <p className="text-xs font-medium text-slate-500">{t("Endpoint")}</p>
           <p className="mono mt-1 break-all">{settings.webhookUrl}</p>
           <p className="mt-3 text-xs text-slate-500">
-            {t("Signed with HMAC-SHA256 in the x-webhook-signature header. At-least-once delivery — de-duplicate on event id. Retry schedule (compressed for the demo): {schedule}, then marked failed.", { schedule })}
+            {t("Signed with HMAC-SHA256 in the x-webhook-signature header. At-least-once delivery — de-duplicate on event id. Retry schedule: {schedule}, then marked failed.", { schedule })}
           </p>
         </section>
         <section className="card p-5">
-          <p className="text-xs font-medium text-slate-500">{t("Mock merchant server")}</p>
+          <p className="text-xs font-medium text-slate-500">{t("Your endpoint")}</p>
           <p className="mt-1 font-semibold">
-            {settings.mockEndpointFailing ? <span className="text-rose-600">{t("Simulating outage (503)")}</span> : <span className="text-emerald-600">{t("Healthy (200)")}</span>}
+            {settings.mockEndpointFailing ? <span className="text-rose-600">{t("Down (503)")}</span> : <span className="text-emerald-600">{t("Healthy (200)")}</span>}
           </p>
           <div className="mt-3">
             <ActionButton url="/api/merchant/settings" body={{ mockEndpointFailing: !settings.mockEndpointFailing }} className={settings.mockEndpointFailing ? "btn-primary btn-sm" : "btn-secondary btn-sm"}>
-              {t(settings.mockEndpointFailing ? "Bring endpoint back up" : "Simulate endpoint outage")}
+              {t(settings.mockEndpointFailing ? "Bring endpoint back up" : "Take endpoint offline")}
             </ActionButton>
           </div>
         </section>
@@ -95,7 +95,7 @@ export default async function WebhooksPage() {
                         <ActionButton url={`/api/merchant/webhooks/${e.id}/resend`}>{t("Resend now")}</ActionButton>
                       </div>
                     </div>
-                    <pre className="max-h-64 overflow-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+                    <pre className="max-h-64 overflow-auto rounded-lg bg-canvas p-3 text-[11px] leading-relaxed text-slate-700">
                       {JSON.stringify(JSON.parse(e.payloadJson), null, 2)}
                     </pre>
                   </div>
@@ -108,7 +108,7 @@ export default async function WebhooksPage() {
       </section>
 
       <section className="card overflow-hidden">
-        <h2 className="border-b border-line px-5 py-3 font-semibold">{t("Mock merchant server — last received")}</h2>
+        <h2 className="border-b border-line px-5 py-3 font-semibold">{t("Your endpoint — last received")}</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <tbody className="divide-y divide-line">

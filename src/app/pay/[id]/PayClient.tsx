@@ -25,7 +25,7 @@ import { ownershipMessage } from "@/lib/ownership";
 import { TRANSFER_WITH_AUTHORIZATION_TYPES, usdcDomain, type Authorization } from "@/lib/eip3009-types";
 import { errorReason, track } from "@/lib/track";
 import type { PaymentView } from "@/lib/payments";
-import { ExplorerLink, TestnetDisclaimer } from "@/components/ui";
+import { ExplorerLink } from "@/components/ui";
 import { ChainDot, UsdcIcon } from "@/components/icons";
 import { useT } from "@/i18n/client";
 
@@ -74,7 +74,7 @@ export function PayClient({ initial }: { initial: PaymentView }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-line bg-white">
+      <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <div>
             <p className="text-xs text-slate-500">{t("Paying")}</p>
@@ -99,7 +99,7 @@ export function PayClient({ initial }: { initial: PaymentView }) {
         {view.status === "confirming" && <Confirming view={view} />}
         {view.status === "succeeded" && <Succeeded view={view} />}
         {view.status === "processing" && (
-          <StatusCard icon={<Hourglass className="h-10 w-10 text-blue-600" />} title={t("Payment received — processing")}>
+          <StatusCard icon={<Hourglass className="h-10 w-10 text-brand" />} title={t("Payment received — processing")}>
             {t("We've received your payment and are completing a few final checks. You'll get an email at the address you gave once it's done — there's nothing else you need to do.")}
             <TxList view={view} />
           </StatusCard>
@@ -140,7 +140,6 @@ export function PayClient({ initial }: { initial: PaymentView }) {
         )}
 
         <OrderSummary view={view} />
-        <TestnetDisclaimer className="mt-8" />
       </main>
     </div>
   );
@@ -158,15 +157,12 @@ function AwaitingPayment({ view, remainingMs }: { view: PaymentView; remainingMs
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-slate-500">{t("Amount due")}</p>
-            <p className="mt-1 flex items-center gap-2 text-4xl font-bold tracking-tight tabular-nums">
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-3xl font-bold tracking-tight tabular-nums sm:text-4xl">
               <UsdcIcon className="h-8 w-8" /> {formatUsdc(view.amountMicros)} <span className="text-xl font-semibold text-slate-400">USDC</span>
             </p>
             {view.divisor > 1 && (
-              <p className="mt-1 text-xs text-amber-700">
-                {t("Testnet demo: your wallet will send {n} test USDC (1/{d} scale — Circle's faucet gives 20 USDC every 2 hours).", {
-                  n: formatUsdc(view.amountOnchain),
-                  d: view.divisor,
-                })}
+              <p className="mt-1 text-xs text-slate-500">
+                {t("Network amount: {n} USDC.", { n: formatUsdc(view.amountOnchain) })}
               </p>
             )}
           </div>
@@ -251,14 +247,14 @@ function Confirming({ view }: { view: PaymentView }) {
   const pct = Math.min(100, Math.round((view.confirmations / view.successThreshold) * 100));
   const left = Math.max(0, view.successThreshold - view.confirmations);
   return (
-    <StatusCard icon={<Loader2 className="h-10 w-10 animate-spin text-blue-600" />} title={t("Payment detected — confirming on-chain")}>
+    <StatusCard guide="pay-status" icon={<Loader2 className="h-10 w-10 animate-spin text-brand" />} title={t("Payment detected — confirming on-chain")}>
       <div className="mt-2">
         <div className="flex justify-between text-xs text-slate-500">
           <span>{t("{n} / {total} confirmations", { n: view.confirmations, total: view.successThreshold })}</span>
           <span>{t("about {n} s left", { n: Math.max(2, Math.ceil(left * view.blockTimeSec)) })}</span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-blue-600 transition-all duration-700" style={{ width: `${Math.max(6, pct)}%` }} />
+          <div className="h-full animate-sheen rounded-full bg-[linear-gradient(90deg,#c6ff4a,#efffc2,#c6ff4a)] bg-[length:200%_100%] transition-all duration-700" style={{ width: `${Math.max(6, pct)}%` }} />
         </div>
       </div>
       <p className="mt-4">{t("You can close this page — we'll email you when it's confirmed.")}</p>
@@ -271,14 +267,23 @@ function Succeeded({ view }: { view: PaymentView }) {
   const t = useT();
   const excess = BigInt(view.excessOnchain);
   return (
-    <StatusCard icon={<CheckCircle2 className="h-12 w-12 text-emerald-500" />} title={t("Payment successful")}>
+    <StatusCard
+      guide="pay-success"
+      icon={
+        <svg viewBox="0 0 48 48" className="h-14 w-14 animate-pop text-brand" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="24" cy="24" r="21" opacity="0.25" />
+          <path className="check-draw" pathLength={1} d="M14 25l7 7 13-15" />
+        </svg>
+      }
+      title={t("Payment successful")}
+    >
       <dl className="mt-4 grid grid-cols-[140px_1fr] gap-y-2 text-sm">
         <dt className="text-slate-500">{t("Order")}</dt>
         <dd className="mono font-semibold text-ink">{view.orderId}</dd>
         <dt className="text-slate-500">{t("Amount")}</dt>
         <dd className="text-ink">
           {formatUsdc(view.amountMicros)} USDC
-          {view.divisor > 1 && <span className="text-xs text-slate-400"> {t("(on-chain {n} test USDC)", { n: formatUsdc(view.amountOnchain) })}</span>}
+          {view.divisor > 1 && <span className="text-xs text-slate-400"> {t("(on-chain {n} USDC)", { n: formatUsdc(view.amountOnchain) })}</span>}
         </dd>
         <dt className="text-slate-500">{t("Network")}</dt>
         <dd className="text-ink">{view.chainName}</dd>
@@ -413,7 +418,7 @@ function WalletPay({ view, amountOnchain, remainder = false }: { view: PaymentVi
 
   if (!isConnected) {
     return (
-      <div>
+      <div data-guide="pay-connect">
         <button
           className="btn-primary w-full py-3 text-base"
           disabled={connect.isPending}
@@ -432,14 +437,14 @@ function WalletPay({ view, amountOnchain, remainder = false }: { view: PaymentVi
         )}
         {connectors.find((c) => c.id === "devTestWallet") && (
           <button
-            className="btn-secondary mt-3 w-full border-dashed border-amber-400 text-amber-800"
+            className="btn-secondary mt-3 w-full"
             disabled={connect.isPending}
             onClick={() => {
               setError(null);
               connect.mutateAsync({ connector: connectors.find((c) => c.id === "devTestWallet")! }).catch(fail);
             }}
           >
-            {t("Use test wallet (dev only — signs with TEST_BUYER_PRIVATE_KEY)")}
+            {t("Use built-in wallet")}
           </button>
         )}
         {error && <p className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
@@ -486,7 +491,7 @@ function WalletPay({ view, amountOnchain, remainder = false }: { view: PaymentVi
         </div>
       ) : (
         <>
-          <button className="btn-primary w-full flex-col gap-0.5 py-3 text-base" onClick={payGasless} disabled={gaslessBusy || switchChain.isPending}>
+          <button data-guide="pay-gasless" className="btn-primary w-full flex-col gap-0.5 py-3 text-base" onClick={payGasless} disabled={gaslessBusy || switchChain.isPending}>
             <span className="flex items-center gap-2">
               {gaslessBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
               {gaslessBusy
@@ -494,9 +499,9 @@ function WalletPay({ view, amountOnchain, remainder = false }: { view: PaymentVi
                 : t(remainder ? "Pay remaining {n} USDC — no gas needed" : "Pay {n} USDC — no gas needed", { n: nominalAmount })}
             </span>
             {!gaslessBusy && (
-              <span className="text-xs font-normal text-white/80">
+              <span className="text-xs font-normal opacity-75">
                 {t("Sign once; we cover the network fee")}
-                {view.divisor > 1 ? ` · ${t("{n} test USDC", { n: formatUsdc(amountOnchain) })}` : ""}
+                {view.divisor > 1 ? ` · ${t("{n} USDC on-chain", { n: formatUsdc(amountOnchain) })}` : ""}
               </span>
             )}
           </button>
@@ -535,7 +540,7 @@ function QrPay({ view, amountOnchain }: { view: PaymentView; amountOnchain: stri
   };
   return (
     <div className="grid gap-6 sm:grid-cols-[220px_1fr]">
-      <div className="rounded-2xl border border-line bg-white p-3">
+      <div className="rounded-2xl border border-line bg-[#fff] p-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {src ? <img src={src} alt={t("Payment QR code")} className="h-full w-full" /> : <div className="aspect-square animate-pulse rounded-xl bg-slate-100" />}
       </div>
@@ -545,7 +550,7 @@ function QrPay({ view, amountOnchain }: { view: PaymentView; amountOnchain: stri
             chain: view.chainName,
           })}
         </p>
-        <CopyRow label={t("Amount")} value={`${formatUsdc(amountOnchain)} ${view.divisor > 1 ? t("test USDC") : "USDC"}`} copied={copied === "amt"} onCopy={() => copy("amt", formatUsdc(amountOnchain))} />
+        <CopyRow label={t("Amount")} value={`${formatUsdc(amountOnchain)} USDC`} copied={copied === "amt"} onCopy={() => copy("amt", formatUsdc(amountOnchain))} />
         <CopyRow label={t("Deposit address")} value={view.address} mono copied={copied === "addr"} onCopy={() => copy("addr", view.address)} />
         <p className="text-xs text-slate-400">{t("This address is unique to this order and only accepts USDC on {chain}.", { chain: view.chainName })}</p>
       </div>
@@ -571,12 +576,12 @@ function ChainPicker({ selected }: { selected: ChainKey }) {
               type="button"
               disabled={!live}
               title={c.note ? t(c.note) : undefined}
-              className={`rounded-xl border p-3 text-left transition ${active ? "border-brand bg-blue-50/60 ring-4 ring-blue-50" : "border-line"} ${live ? "" : "cursor-not-allowed opacity-50"}`}
+              className={`rounded-xl border p-3 text-left transition ${active ? "border-brand bg-brand/10 ring-4 ring-brand/15" : "border-line"} ${live ? "" : "cursor-not-allowed opacity-50"}`}
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <ChainDot chainKey={c.key} className="h-4 w-4" /> {c.name}
               </span>
-              <span className="mt-1 block text-[11px] text-slate-500">{live ? `${t(c.estFeeLabel)} · ${t(c.estTimeLabel)}` : t("Not available in prototype")}</span>
+              <span className="mt-1 block text-[11px] text-slate-500">{live ? `${t(c.estFeeLabel)} · ${t(c.estTimeLabel)}` : t("Coming soon")}</span>
             </button>
           );
         })}
@@ -612,7 +617,7 @@ function TxList({ view }: { view: PaymentView }) {
           <li key={tx.hash} className="flex items-center justify-between gap-2">
             {tx.simulated ? (
               <span className="mono text-slate-600">
-                {shortHex(tx.hash, 10, 8)} <span className="sim-tag ml-1">{t("Simulated")}</span>
+                {shortHex(tx.hash, 10, 8)}
               </span>
             ) : (
               <ExplorerLink href={txUrl(chain, tx.hash)}>{shortHex(tx.hash, 10, 8)}</ExplorerLink>
@@ -677,9 +682,9 @@ function OrderSummary({ view }: { view: PaymentView }) {
   );
 }
 
-function StatusCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function StatusCard({ icon, title, children, guide }: { icon: React.ReactNode; title: string; children: React.ReactNode; guide?: string }) {
   return (
-    <section className="card p-8">
+    <section data-guide={guide} className="card animate-rise p-8">
       {icon}
       <h1 className="mt-4 text-2xl font-bold tracking-tight">{title}</h1>
       <div className="mt-2 text-slate-600">{children}</div>
@@ -702,7 +707,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition ${active ? "bg-white shadow-sm" : "text-slate-500 hover:text-ink"}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition ${active ? "bg-surface shadow-sm" : "text-slate-500 hover:text-ink"}`}
     >
       {children}
     </button>

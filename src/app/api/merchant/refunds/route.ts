@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!pr) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
   const refunds = await db.select().from(schema.refunds).where(eq(schema.refunds.paymentRequestId, pr.id));
   const amount = refundableOnchain(pr, refunds);
-  if (pr.fundsStatus === "settled") return NextResponse.json({ error: "Already converted to SGD and paid out — refund via a debit on the next settlement (not in this prototype)" }, { status: 400 });
+  if (pr.fundsStatus === "settled") return NextResponse.json({ error: "Already converted to SGD and paid out — refund via a debit on the next settlement" }, { status: 400 });
   if (amount <= 0n) return NextResponse.json({ error: "Nothing refundable on this payment" }, { status: 400 });
   try {
     const r = await createRefund({ pr, reason: "merchant_full", kind: "full", amountOnchain: amount });

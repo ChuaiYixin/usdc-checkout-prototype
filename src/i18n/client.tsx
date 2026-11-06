@@ -32,9 +32,9 @@ export function LanguageSwitch() {
     document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
     router.refresh();
   };
-  const cls = (active: boolean) => `rounded-full px-2.5 py-1 text-xs font-semibold transition ${active ? "bg-ink text-white" : "text-slate-500 hover:text-ink"}`;
+  const cls = (active: boolean) => `rounded-full px-2.5 py-1 text-xs font-semibold transition ${active ? "bg-ink text-canvas" : "text-slate-500 hover:text-ink"}`;
   return (
-    <div role="group" aria-label="Language / 语言" className="fixed bottom-3 right-3 z-50 flex items-center gap-0.5 rounded-full border border-line bg-white/95 p-1 shadow-md backdrop-blur">
+    <div role="group" aria-label="Language / 语言" className="fixed bottom-3 right-3 z-50 flex items-center gap-0.5 rounded-full border border-slate-300 bg-surface/95 p-1 shadow-md backdrop-blur">
       <Languages className="mx-1 h-3.5 w-3.5 text-slate-400" aria-hidden />
       <button type="button" className={cls(locale === "en")} aria-pressed={locale === "en"} onClick={() => set("en")}>
         EN

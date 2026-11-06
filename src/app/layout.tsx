@@ -1,27 +1,33 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import { getLocale, getT } from "@/i18n/server";
 import { LanguageSwitch, LocaleProvider } from "@/i18n/client";
-import { GuideBar } from "@/guide/GuideBar";
+import { GuideLauncher } from "@/guide/GuideLauncher";
+import { GuideOverlay } from "@/guide/GuideOverlay";
 import { GuideProvider } from "@/guide/GuideProvider";
 import "./globals.css";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
   return {
-    title: t("USDC Checkout Prototype"),
-    description: t("Cross-border stablecoin checkout for a Singapore merchant — Base Sepolia testnet only."),
+    title: "Quayline",
+    description: t("Accept USDC from buyers anywhere and settle to your Singapore bank account in SGD."),
   };
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   return (
-    <html lang={locale === "zh" ? "zh-CN" : "en"}>
-      <body className="min-h-screen pb-12 font-sans antialiased">
+    <html lang={locale === "zh" ? "zh-CN" : "en"} className={`${geist.variable} ${geistMono.variable}`}>
+      <body className="min-h-screen font-sans antialiased">
         <LocaleProvider locale={locale}>
           <GuideProvider>
             {children}
-            <GuideBar />
+            <GuideLauncher />
+            <GuideOverlay />
           </GuideProvider>
           <LanguageSwitch />
         </LocaleProvider>

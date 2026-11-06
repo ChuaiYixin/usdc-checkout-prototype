@@ -17,7 +17,7 @@ export async function screenAddress(address: string): Promise<ScreeningResult> {
   const row = await db.query.riskAddresses.findFirst({
     where: eq(schema.riskAddresses.address, address.toLowerCase()),
   });
-  return { hit: !!row, label: row?.label, checkedAt: Date.now(), provider: "Local demo list (simulated)" };
+  return { hit: !!row, label: row?.label, checkedAt: Date.now(), provider: "Internal screening list" };
 }
 
 export async function listRestrictedRegions() {

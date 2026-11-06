@@ -238,18 +238,17 @@ export async function ingestTransfer(prArg: PR, t: IncomingTransfer) {
   if (!inserted.length) return false;
   const transferId = inserted[0].id;
   const amount = BigInt(t.amountOnchain);
-  const sim = t.simulated ? " [simulated]" : "";
 
   if (t.kind === "non_usdc") {
     // R14: never credited; manual review, then returned.
     await updatePr(pr.id, { hasNonUsdc: 1 });
     await openException(pr, "non_usdc", "manual_review_return", amount, transferId, `${t.tokenSymbol} ${t.tokenAddress}`);
-    await logActivity(pr.orderId, pr.id, "transfer.non_usdc", `Received a non-USDC token (${t.tokenSymbol}) from ${t.fromAddress} — not credited, sent to exception queue${sim}`);
+    await logActivity(pr.orderId, pr.id, "transfer.non_usdc", `Received a non-USDC token (${t.tokenSymbol}) from ${t.fromAddress} — not credited, sent to exception queue`);
     await enqueueWebhook("payment.exception", { orderId: pr.orderId, paymentRequestId: pr.id, reason: "non_usdc_token", token: t.tokenAddress });
     return true;
   }
 
-  await logActivity(pr.orderId, pr.id, "transfer.seen", `Detected ${nominal(pr, amount)} from ${t.fromAddress} in block ${t.blockNumber}${late ? " — after expiry" : ""}${sim}`);
+  await logActivity(pr.orderId, pr.id, "transfer.seen", `Detected ${nominal(pr, amount)} from ${t.fromAddress} in block ${t.blockNumber}${late ? " — after expiry" : ""}`);
 
   if (late) {
     // Only take over the request's status when nothing in-time is still being processed; an in-flight

@@ -150,7 +150,7 @@ export const webhookDeliveries = sqliteTable("webhook_deliveries", {
   createdAt: integer("created_at").notNull(),
 });
 
-// What the mock merchant server (/api/mock-merchant/webhook) received.
+// What the mock merchant server (/api/webhook-receiver/webhook) received.
 export const mockMerchantInbox = sqliteTable("mock_merchant_inbox", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   eventId: text("event_id").notNull(),

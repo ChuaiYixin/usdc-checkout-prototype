@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CHAINS, txUrl, type ChainKey } from "@/config/chains";
 import { formatUsdc, shortHex } from "@/lib/money";
 import type { listOrders } from "@/lib/queries";
-import { ExplorerLink, SimTag } from "@/components/ui";
+import { ExplorerLink } from "@/components/ui";
 import { FundsBadge, PrStatusBadge } from "@/components/status";
 import { Time } from "@/components/time";
 import { getT } from "@/i18n/server";
@@ -35,7 +35,7 @@ export async function OrdersTable({ rows }: { rows: Awaited<ReturnType<typeof li
                   <Link href={`/merchant/orders/${order.id}`} className="mono font-semibold text-brand hover:underline">
                     {order.id}
                   </Link>
-                  {order.simulated ? <span className="ml-1.5"><SimTag /></span> : null}
+                  
                 </td>
                 <td className="td text-slate-500"><Time ms={order.createdAt} /></td>
                 <td className="td">

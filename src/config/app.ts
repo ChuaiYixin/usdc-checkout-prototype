@@ -4,7 +4,7 @@
 export const MERCHANT = {
   name: "Atelier Kelong",
   tagline: "Designer accessories · Singapore",
-  bankLabel: "SGD current account ••••4821 (simulated)",
+  bankLabel: "SGD current account ••••4821",
 };
 
 // R4: payment request validity. PRD decision 3: 15 minutes.
@@ -37,8 +37,8 @@ export const TRAVEL_RULE = {
 // R16: default buyer-location restrictions. Editable at /ops/compliance (stored in the DB).
 export const DEFAULT_RESTRICTED_REGIONS: { code: string; reason: string }[] = [
   { code: "ID", reason: "Bank Indonesia prohibits crypto as a means of payment (source: BeInCrypto)" },
-  { code: "KP", reason: "Comprehensive sanctions (illustrative)" },
-  { code: "IR", reason: "Comprehensive sanctions (illustrative)" },
+  { code: "KP", reason: "Comprehensive sanctions" },
+  { code: "IR", reason: "Comprehensive sanctions" },
 ];
 
 export const COUNTRIES: { code: string; name: string }[] = [
@@ -67,7 +67,7 @@ export const PRODUCTS = [
     name: "Kelong Pearl Drop Earrings",
     variant: "Freshwater pearl · 18k gold vermeil",
     priceCents: 5400,
-    hue: "from-amber-100 via-rose-100 to-stone-200",
+    hue: "from-slate-200 via-slate-100 to-brand/20",
   },
 ];
 

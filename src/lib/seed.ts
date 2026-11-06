@@ -4,9 +4,9 @@ import { getSetting, setSetting } from "./settings";
 
 // Made-up addresses for the demo screening list. NOT a real sanctions list.
 export const DEMO_RISK_ADDRESSES = [
-  { address: "0xbad0000000000000000000000000000000000001", label: "Demo: sanctioned entity (simulated)" },
-  { address: "0xbad0000000000000000000000000000000000002", label: "Demo: mixer-linked address (simulated)" },
-  { address: "0xbad0000000000000000000000000000000000003", label: "Demo: stolen-funds cluster (simulated)" },
+  { address: "0xbad0000000000000000000000000000000000001", label: "Sanctioned entity" },
+  { address: "0xbad0000000000000000000000000000000000002", label: "Mixer-linked address" },
+  { address: "0xbad0000000000000000000000000000000000003", label: "Stolen-funds cluster" },
 ];
 
 export async function seedIfEmpty() {

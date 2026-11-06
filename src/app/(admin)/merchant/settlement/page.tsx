@@ -6,7 +6,6 @@ import { getMerchantSettings } from "@/lib/settings";
 import { DEMO_2FA_CODE, availableToSettle, fxQuote, listSettlements } from "@/lib/settlement";
 import { formatSgd, formatUsdc, shortHex } from "@/lib/money";
 import { MERCHANT, SIMULATED_FX } from "@/config/app";
-import { SimTag } from "@/components/ui";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
 import { getT } from "@/i18n/server";
@@ -27,7 +26,7 @@ export default async function SettlementPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t("Settlement")}</h1>
-        <p className="text-sm text-slate-500">{t("Choose what you receive. Rates and fees are shown before anything converts (R10).")}</p>
+        <p className="text-sm text-slate-500">{t("Choose what you receive. Rates and fees are shown before anything converts.")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -43,22 +42,24 @@ export default async function SettlementPage() {
       </div>
 
       {auto ? (
-        <section className="card p-6">
+        <section data-guide="settle-preview" className="card p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="flex items-center gap-2 font-semibold">
-                {t("Today's conversion preview")} <SimTag />
+                {t("Today's conversion preview")}
               </h2>
               <p className="mt-1 text-sm text-slate-500">{t(items.length === 1 ? "{n} payment at finality, net of platform fee." : "{n} payments at finality, net of platform fee.", { n: items.length })}</p>
             </div>
-            <ActionButton url="/api/merchant/settlement" body={{ action: "run" }} className="btn-primary btn-sm">
-              {t("Run today's settlement now (simulated)")}
-            </ActionButton>
+            <span data-guide="settle-run" className="inline-flex">
+              <ActionButton url="/api/merchant/settlement" body={{ action: "run" }} className="btn-primary btn-sm">
+                {t("Run today's settlement now")}
+              </ActionButton>
+            </span>
           </div>
           <dl className="mt-5 grid gap-4 sm:grid-cols-4">
             <Metric label={t("USDC to convert")} value={`${formatUsdc(net)} USDC`} />
-            <Metric label={t("Rate USD/SGD (simulated)")} value={SIMULATED_FX.usdSgdRate.toFixed(4)} />
-            <Metric label={t("FX spread {n}% (illustrative)", { n: (SIMULATED_FX.spreadBps / 100).toFixed(2) })} value={`− ${formatSgd(q.feeSgdCents)}`} />
+            <Metric label={t("Rate USD/SGD")} value={SIMULATED_FX.usdSgdRate.toFixed(4)} />
+            <Metric label={t("FX spread {n}%", { n: (SIMULATED_FX.spreadBps / 100).toFixed(2) })} value={`− ${formatSgd(q.feeSgdCents)}`} />
             <Metric label={t("You receive")} value={formatSgd(q.netSgdCents)} strong />
           </dl>
         </section>
@@ -72,7 +73,7 @@ export default async function SettlementPage() {
             <p className="mt-1 text-xs text-slate-500">{t("{n} USDC withdrawn so far", { n: formatUsdc(withdrawn) })}</p>
           </section>
           <section className="card p-6">
-            <h3 className="mb-3 text-sm font-semibold">{t("Whitelisted wallets (R11)")}</h3>
+            <h3 className="mb-3 text-sm font-semibold">{t("Whitelisted wallets")}</h3>
             <ul className="mb-4 space-y-1 text-xs">
               {wallets.map((w) => (
                 <li key={w.address} className="flex justify-between">
@@ -85,7 +86,7 @@ export default async function SettlementPage() {
           </section>
           <section className="card p-6">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-              {t("Withdraw USDC")} <SimTag />
+              {t("Withdraw USDC")}
             </h3>
             <WithdrawForm wallets={wallets.map((w) => ({ address: w.address, label: w.label }))} />
             <ul className="mt-4 space-y-1 text-xs text-slate-500">
@@ -102,7 +103,7 @@ export default async function SettlementPage() {
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h2 className="flex items-center gap-2 font-semibold">
-            {t("Settlement history")} <SimTag />
+            {t("Settlement history")}
           </h2>
           <Link href="/merchant/reconciliation" className="text-sm font-medium text-brand hover:underline">
             {t("Reconcile")} →

@@ -2,36 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeftRight, Banknote, BarChart3, FlaskConical, Home, Inbox, ListOrdered, Route, ShieldCheck, ShoppingBag, Webhook } from "lucide-react";
+import { ArrowLeftRight, Banknote, BarChart3, FlaskConical, Home, Inbox, ListOrdered, ShieldCheck, ShoppingBag, Webhook } from "lucide-react";
 import { useT } from "@/i18n/client";
 
 export const NAV_GROUPS = [
-  {
-    title: "Start here",
-    items: [{ href: "/", label: "Main flow", icon: Route, exact: true }],
-  },
   {
     title: "Merchant",
     items: [
       { href: "/merchant", label: "Overview", icon: Home, exact: true },
       { href: "/merchant/orders", label: "Orders", icon: ListOrdered },
       { href: "/merchant/webhooks", label: "Webhooks", icon: Webhook },
-      { href: "/merchant/settlement", label: "Settlement", icon: Banknote },
-      { href: "/merchant/reconciliation", label: "Reconciliation", icon: ArrowLeftRight },
+      { href: "/merchant/settlement", label: "Settlement", icon: Banknote, guide: "nav-settlement" },
+      { href: "/merchant/reconciliation", label: "Reconciliation", icon: ArrowLeftRight, guide: "nav-reconciliation" },
     ],
   },
   {
     title: "Platform ops (internal)",
     items: [
-      { href: "/ops/exceptions", label: "Exception queue", icon: Inbox },
+      { href: "/ops/exceptions", label: "Exception queue", icon: Inbox, guide: "nav-exceptions" },
       { href: "/ops/compliance", label: "Compliance", icon: ShieldCheck },
-      { href: "/ops/metrics", label: "PRD metrics", icon: BarChart3 },
-      { href: "/ops/simulator", label: "Simulator", icon: FlaskConical },
+      { href: "/ops/metrics", label: "Metrics", icon: BarChart3 },
+      { href: "/ops/scenarios", label: "Scenarios", icon: FlaskConical, guide: "nav-scenarios" },
     ],
   },
   {
-    title: "Buyer",
-    items: [{ href: "/store", label: "Open store checkout", icon: ShoppingBag }],
+    title: "Storefront",
+    items: [{ href: "/store", label: "Open store checkout", icon: ShoppingBag, guide: "nav-store" }],
   },
 ];
 
@@ -50,11 +46,12 @@ export function SideNav() {
                 <li key={it.href}>
                   <Link
                     href={it.href}
-                    className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition ${
-                      active ? "bg-slate-100 font-semibold text-ink" : "text-slate-600 hover:bg-slate-50 hover:text-ink"
+                    data-guide={"guide" in it ? it.guide : undefined}
+                    className={`relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition duration-200 ${
+                      active ? "bg-slate-100 font-semibold text-ink before:absolute before:-left-3 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-brand" : "text-slate-500 hover:bg-slate-50 hover:text-ink"
                     }`}
                   >
-                    <it.icon className="h-4 w-4" />
+                    <it.icon className={`h-4 w-4 ${active ? "text-brand" : ""}`} />
                     {t(it.label)}
                   </Link>
                 </li>
@@ -80,8 +77,9 @@ export function MobileNav() {
           <Link
             key={it.href}
             href={it.href}
+            data-guide={"guide" in it ? it.guide : undefined}
             className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
-              active ? "border-ink bg-ink text-white" : "border-line bg-white text-slate-600"
+              active ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-slate-600"
             }`}
           >
             <it.icon className="h-3.5 w-3.5" />

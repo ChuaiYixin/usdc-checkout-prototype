@@ -11,7 +11,7 @@ export interface MerchantSettings {
 
 const DEFAULTS: MerchantSettings = {
   settlementPreference: "auto_sgd", // PRD decision 5: default to daily SGD conversion
-  webhookUrl: `${process.env.APP_URL || "http://localhost:3000"}/api/mock-merchant/webhook`,
+  webhookUrl: `${process.env.APP_URL || "http://localhost:3000"}/api/webhook-receiver/webhook`,
   mockEndpointFailing: false,
 };
 

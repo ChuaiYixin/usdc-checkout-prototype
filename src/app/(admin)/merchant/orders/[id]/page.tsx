@@ -5,7 +5,7 @@ import { getOrderDetail, refundableOnchain } from "@/lib/queries";
 import { CHAINS, addressUrl, txUrl, type ChainKey } from "@/config/chains";
 import { PLATFORM_FEE_BPS, countryName } from "@/config/app";
 import { formatUsdc, shortHex } from "@/lib/money";
-import { Badge, ExplorerLink, SimTag } from "@/components/ui";
+import { Badge, ExplorerLink } from "@/components/ui";
 import { FundsBadge, PrStatusBadge, RefundBadge, exceptionLabel } from "@/components/status";
 import { Time } from "@/components/time";
 import { ActionButton } from "@/components/ActionButton";
@@ -22,7 +22,6 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
   const travel = JSON.parse(order.travelRuleJson) as Record<string, string>;
   const refundable = pr ? refundableOnchain(pr, refunds) : 0n;
   const usdc = (onchain: string | bigint) => formatUsdc(BigInt(onchain) * BigInt(pr?.divisor ?? 1));
-  const isSim = !!order.simulated;
 
   return (
     <div className="space-y-6">
@@ -33,8 +32,11 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mono flex flex-wrap items-center gap-3 text-2xl font-bold">
-            {order.id} {pr && <PrStatusBadge status={pr.status} />} {pr && <FundsBadge status={pr.fundsStatus} />}
-            {isSim && <SimTag />}
+            {order.id}
+            <span data-guide="order-badges" className="flex flex-wrap items-center gap-2 font-sans">
+              {pr && <PrStatusBadge status={pr.status} />}
+              <span data-guide="order-funds" className="rounded-full">{pr && <FundsBadge status={pr.fundsStatus} />}</span>
+            </span>
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {t("Placed by {name} ({country})", { name: order.customerName, country: t(countryName(order.country)) })} · <Time ms={order.createdAt} /> SGT
@@ -42,7 +44,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
           </p>
         </div>
         {pr && refundable > 0n && (
-          <div className="text-right">
+          <div data-guide="order-refund" className="text-right">
             <ActionButton
               url="/api/merchant/refunds"
               body={{ paymentRequestId: pr.id }}
@@ -67,7 +69,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <Dt>{t("Amount")}</Dt>
               <dd>
                 <b>{formatUsdc(pr.amountMicros)} USDC</b> <span className="text-slate-500">{t("= ${n} order total", { n: (order.totalCents / 100).toFixed(2) })}</span>
-                {pr.divisor > 1 && <span className="block text-xs text-amber-700">{t("On-chain (testnet 1/{d} scale): {n} test USDC", { d: pr.divisor, n: formatUsdc(pr.amountOnchain) })}</span>}
+                {pr.divisor > 1 && <span className="block text-xs text-amber-700">{t("On-chain: {n} USDC", { d: pr.divisor, n: formatUsdc(pr.amountOnchain) })}</span>}
               </dd>
               <Dt>{t("Received")}</Dt>
               <dd>
@@ -78,7 +80,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <dd>{chain?.name}</dd>
               <Dt>{t("Deposit address")}</Dt>
               <dd>
-                {isSim ? <span className="mono">{pr.address}</span> : <ExplorerLink href={addressUrl(chain!, pr.address)}>{pr.address}</ExplorerLink>}
+                {order.simulated ? <span className="mono">{pr.address}</span> : <ExplorerLink href={addressUrl(chain!, pr.address)}>{pr.address}</ExplorerLink>}
                 <span className="ml-2 text-xs text-slate-400">{t("HD index {n}", { n: pr.derivationIndex })}</span>
               </dd>
               <Dt>{t("Payer (original address)")}</Dt>
@@ -94,7 +96,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               </dd>
               <Dt>{t("Fee")}</Dt>
               <dd>
-                {formatUsdc(pr.feeMicros)} USDC <span className="text-xs text-slate-400">{t("({n}%, illustrative pricing)", { n: (PLATFORM_FEE_BPS / 100).toFixed(2) })}</span>
+                {formatUsdc(pr.feeMicros)} USDC <span className="text-xs text-slate-400">{t("({n}%)", { n: (PLATFORM_FEE_BPS / 100).toFixed(2) })}</span>
               </dd>
               <Dt>{t("Net to merchant")}</Dt>
               <dd className="font-semibold">{formatUsdc(BigInt(pr.amountMicros) - BigInt(pr.feeMicros))} USDC</dd>
@@ -127,7 +129,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               <span className="text-slate-400">{t("walletOwnership")}:</span>{" "}
               {pr?.walletVerifiedAddress ? t("verified by signature ({address})", { address: shortHex(pr.walletVerifiedAddress) }) : t("not required / not signed")}
             </p>
-            <p className="mt-2 text-[11px] text-slate-400">{t("Tier threshold: S$1,500 (MAS Notice PSN02, paragraphs 13.4 and 13.6). Identity verification is not modelled.")}</p>
+            <p className="mt-2 text-[11px] text-slate-400">{t("Tier threshold: S$1,500 (MAS Notice PSN02, paragraphs 13.4 and 13.6).")}</p>
           </div>
         </section>
       </div>
@@ -164,7 +166,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                       <Badge tone={tr.status === "confirmed" ? "green" : tr.status === "reorged" ? "red" : "blue"}>{t(tr.status)}</Badge>
                     </td>
                     <td className="td space-x-1">
-                      {tr.simulated ? <SimTag /> : null}
+                      
                       {tr.kind === "non_usdc" && <Badge tone="amber">{t("non-USDC")}</Badge>}
                       {tr.late ? <Badge tone="amber">{t(tr.acceptedLate ? "late · accepted" : "late")}</Badge> : null}
                       {tr.screeningHit ? <Badge tone="violet">{t("screening hit")}</Badge> : null}
@@ -195,7 +197,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                       <RefundBadge status={r.status} />
                     </div>
                     <p className="text-xs text-slate-500">
-                      {t("To {address} · method {method} · screening {result}", { address: shortHex(r.toAddress), method: t(r.method), result: t(r.screeningResult) })}
+                      {t("To {address} · method {method} · screening {result}", { address: shortHex(r.toAddress), method: t(r.method === "simulated" ? "internal" : r.method), result: t(r.screeningResult) })}
                     </p>
                     {r.txHash && (
                       <p className="text-xs">
@@ -204,7 +206,7 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
                     )}
                     {r.buyerNotifiedAt && (
                       <p className="text-xs text-slate-500">
-                        {t("Buyer notified by email (simulated) at")} <Time ms={r.buyerNotifiedAt} />
+                        {t("Buyer notified by email at")} <Time ms={r.buyerNotifiedAt} />
                       </p>
                     )}
                     {r.error && <p className="text-xs text-rose-600">{t(r.error)}</p>}

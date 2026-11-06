@@ -78,7 +78,16 @@ test("main flow: every check exists, and only counts what happened after the par
   const { runChecks } = await import("../src/guide/checks");
   const { checks: keys, latest: none } = await runChecks(Date.now());
   assert.equal(none, null);
-  for (const part of PARTS) for (const s of part.steps) if (s.check) assert.ok(s.check in keys, `${part.id}: unknown check ${s.check}`);
+  for (const part of PARTS) {
+    for (const s of part.steps) {
+      if (typeof s.until === "object" && "check" in s.until) assert.ok(s.until.check in keys, `${part.id}: unknown check ${s.until.check}`);
+      assert.ok(s.stage < part.stages.length, `${part.id}: stage out of range`);
+    }
+    // Stages only move forward, and every stage has a step.
+    const stages = part.steps.map((s) => s.stage);
+    assert.deepEqual(stages, [...stages].sort((a, b) => a - b));
+    assert.equal(new Set(stages).size, part.stages.length);
+  }
 
   // an order from before the start doesn't count, even if its payment arrives afterwards
   const older = await h.newOrder();

@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { CreditCard, Gem, Info, Loader2, Lock, Minus, Plus, ShieldAlert } from "lucide-react";
 import { COUNTRIES, MERCHANT, PRODUCTS, SHIPPING_CENTS, TESTNET_AMOUNT_DIVISOR } from "@/config/app";
 import { formatUsd } from "@/lib/money";
-import { TestnetDisclaimer } from "@/components/ui";
 import { UsdcIcon } from "@/components/icons";
 
 interface Props {
@@ -77,8 +76,8 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5]">
-      <header className="border-b border-stone-200 bg-white">
+    <div className="min-h-screen bg-canvas">
+      <header className="border-b border-stone-200 bg-surface">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <Gem className="h-5 w-5 text-stone-700" />
@@ -145,7 +144,7 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
                 onChange={() => setMethod("card")}
                 icon={<CreditCard className="h-6 w-6 text-slate-600" />}
                 title={t("Credit or debit card")}
-                subtitle={t("Not part of this prototype")}
+                subtitle={t("Coming soon")}
                 disabled
               />
             </div>
@@ -220,16 +219,15 @@ export function CheckoutForm({ restricted, travelRuleThresholdCents, travelRuleT
             {effectiveMethod === "usdc" && (
               <p className="mt-2 text-right text-xs text-slate-500">
                 = {(total / 100).toFixed(2)} USDC
-                {TESTNET_AMOUNT_DIVISOR > 1 && ` ${t("(testnet: {n} test USDC on-chain)", { n: (total / 100 / TESTNET_AMOUNT_DIVISOR).toFixed(2) })}`}
+                {TESTNET_AMOUNT_DIVISOR > 1 && ` ${t("({n} USDC on-chain)", { n: (total / 100 / TESTNET_AMOUNT_DIVISOR).toFixed(2) })}`}
               </p>
             )}
             {error && <p className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-            <button className="btn-primary mt-6 w-full py-3 text-base" disabled={submitting || effectiveMethod !== "usdc"}>
+            <button data-guide="store-pay" className="btn-primary mt-6 w-full py-3 text-base" disabled={submitting || effectiveMethod !== "usdc"}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UsdcIcon className="h-5 w-5" mono />}
-              {effectiveMethod === "usdc" ? t("Pay {n} USDC", { n: (total / 100).toFixed(2) }) : t("Card checkout not in prototype")}
+              {effectiveMethod === "usdc" ? t("Pay {n} USDC", { n: (total / 100).toFixed(2) }) : t("Card checkout coming soon")}
             </button>
           </section>
-          <TestnetDisclaimer />
         </aside>
       </form>
     </div>
@@ -257,15 +255,15 @@ function PayOption(props: {
   return (
     <label
       className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
-        props.checked ? "border-brand bg-blue-50/50 ring-4 ring-blue-50" : "border-line"
+        props.checked ? "border-brand bg-brand/10 ring-4 ring-brand/15" : "border-line"
       } ${props.disabled ? "cursor-not-allowed opacity-50" : "hover:border-slate-300"}`}
     >
-      <input type="radio" className="h-4 w-4 accent-[#2563eb]" checked={props.checked} onChange={props.onChange} disabled={props.disabled} />
+      <input type="radio" className="h-4 w-4 accent-[#c6ff4a]" checked={props.checked} onChange={props.onChange} disabled={props.disabled} />
       {props.icon}
       <div className="flex-1">
         <p className="text-sm font-semibold">
           {props.title}
-          {props.badge && <span className="ml-2 rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{props.badge}</span>}
+          {props.badge && <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-bold text-on-brand">{props.badge}</span>}
         </p>
         <p className="text-xs text-slate-500">{props.subtitle}</p>
       </div>
